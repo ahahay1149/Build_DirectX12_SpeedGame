@@ -7,9 +7,8 @@
 void TerrainComponent::initAction()
 {
 	FBXCharacterData* fbxChara = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
-	fbxChara->SetGraphicsPipeLine(L"StaticFBX");	//アニメなしFBXモード
-
-
+	//fbxChara->SetGraphicsPipeLine(L"StaticFBX");		アニメなしFBXモード
+	fbxChara->SetGraphicsPipeLine(L"StaticLambert");	//スキンアニメありLambert
 
 	//TerrainHit01
 	m_bloadHit.setAABBMinMax(fbxChara->GetMainFbx()->GetFbxMin(), fbxChara->GetMainFbx()->GetFbxMax());

@@ -23,6 +23,12 @@ void FBXCharacterData::ResetBoneMatrix(int clCount)
 FBXCharacterData::FBXCharacterData()
 {
 	AddConstantBuffer(sizeof(XMMATRIX), nullptr);	//For ModelMatrix
+
+	//======Lighting
+	// ラベル名間違えないように
+	m_ambientLight = L"SCENE_AMBIENT";
+	m_directionalLight = L"SCENE_DIRECTIONAL";
+	//======Lighting End
 }
 
 HRESULT FBXCharacterData::SetMainFBX(const std::wstring fbxId)

@@ -39,6 +39,11 @@ private:
 
 	void ResetBoneMatrix(int clCount);
 
+	//======Lighting
+	std::wstring m_ambientLight;		//LightSettingManagerから受け取る環境光データのラベル
+	std::wstring m_directionalLight;	//LightSettingManagerから受け取る平行光源データのラベル
+	//======Lighting End
+
 public:
 
 	//Phase 3
@@ -52,7 +57,7 @@ public:
 		return m_mainFbx;
 	}
 
-	//ToDo; SkinAnime09
+	// SkinAnime09
 	//スキンアニメ用FBX読み込みとアニメ実行メソッド関係
 	void SetAnime(std::wstring animeLabel);		//再生アニメ指定
 	void UpdateAnimation();						//アニメ1フレーム更新
@@ -68,4 +73,26 @@ public:
 	
 	//Phase3
 	XMFLOAT4X4* GetAnimatedMatrixData();
+
+	//======Lighting
+	void SetAmbientLight(std::wstring amb)
+	{
+		m_ambientLight = amb;
+	}
+
+	std::wstring& GetAmbientLight()
+	{
+		return m_ambientLight;
+	}
+
+	void SetDirectionalLight(std::wstring dir)
+	{
+		m_directionalLight = dir;
+	}
+
+	std::wstring& GetDirectionalLight()
+	{
+		return m_directionalLight;
+	}
+	//======Lighting End
 };

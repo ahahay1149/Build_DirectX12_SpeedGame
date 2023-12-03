@@ -16,8 +16,9 @@ void UnityChanPlayer::initAction()
 {
 	//FBXCharacterDataは基底クラスのGameObjectにセットする
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
-	//chdata->SetGraphicsPipeLine(L"StaticFBX");	//今は通常FBXで
-	chdata->SetGraphicsPipeLine(L"AnimationFBX");	//スキンアニメ有りFBX
+	//chdata->SetGraphicsPipeLine(L"StaticFBX");	//通常FBX
+	//chdata->SetGraphicsPipeLine(L"AnimationFBX");	//スキンアニメ有りFBX
+	chdata->SetGraphicsPipeLine(L"SkeltalLambert");	//スキンアニメ有りFBX+Lambert
 
 	chdata->SetMainFBX(L"UnityChan");
 
@@ -60,8 +61,6 @@ void UnityChanPlayer::initAction()
 bool UnityChanPlayer::frameAction()
 {
 	FBXCharacterData* chData = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
-
-
 
 	//移動処理
 	GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(MyAccessHub::getMyGameEngine()->GetSceneController());

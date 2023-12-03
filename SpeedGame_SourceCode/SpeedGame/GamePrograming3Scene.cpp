@@ -11,7 +11,8 @@ ResultUIRender* GamePrograming3Scene::m_ResultUIRender = nullptr;
 
 #include "SpriteRenderPipeline.h"
 #include "FBXCharacterData.h"
-#include "StandardFbxPipeline.h"
+#include "StandardLightingPipeline.h"
+#include "LightSettingManager.h"
 
 //Fbx Loadの最適化（一つのメッシュを使い回せるように処理を変更）
 #include "FBXDataContainerSystem.h"
@@ -183,15 +184,40 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				plMng->AddPipeLineObject(L"AlphaSprite", spritePL);
 
 				//FBX
-				StandardFbxPipeline* fbxPL = new StandardFbxPipeline();
-				//fbxPL->SetAnimationMode(false);
+				StandardLightingPipeline* fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(0);
 				plMng->AddPipeLineObject(L"StaticFBX", fbxPL);
 
-				fbxPL = new StandardFbxPipeline();
-				fbxPL->SetAnimationMode(true);
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::SKELTAL);
 				plMng->AddPipeLineObject(L"AnimationFBX", fbxPL);
 
-				//==========PipeLineManager END
+				//======Lambert Pipeline
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::Lambert);
+				plMng->AddPipeLineObject(L"StaticLambert", fbxPL);	//Staticメッシュ+Lambert
+
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::SKELTAL | StandardLightingPipeline::PIPELINE_FLAGS::Lambert);
+				plMng->AddPipeLineObject(L"SkeltalLambert", fbxPL);
+				//======Lambert Pipeline End
+
+				//======Lighting
+				LightSettingManager* lightMng = LightSettingManager::GetInstance();
+				XMFLOAT3 lightColor;
+				XMFLOAT3 lightDirection;
+
+				//Ambient
+				lightColor = { 0.3f,0.3f,0.3f };	//1.0でライトの影響値ゼロ
+				lightMng->CreateAmbientLight(L"SCENE_AMBIENT", lightColor);	//登録名はFBXCharacterData参照
+
+				//DirectionalLight
+				lightColor = { 0.5f,0.5f,0.8f };			//昼光色的な
+				lightDirection = { -0.57f,-0.57f, 0.57f };	//左斜め下Z奥向き
+				lightMng->CreateDirectionalLight(L"SCENE_DIRECTIONAL", lightColor, lightDirection);	//登録名はFBXCharacterData参照
+				//======Lighting End
+
+				//==========PipeLineManager End
 
 				HitManager* hitMng = engine->GetHitManager();
 
@@ -395,119 +421,47 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Heart.fbx", L"GoldenHeart")))
 					return E_FAIL;
 
-				GameObject* heartObj;	//使いまわしするのでここで宣言
+				//ハートの個数
+				const int heartNum = 10;
 
-				//====01====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(3.0f, 0.0f, 8.0f);
+				//ハートの情報
+				struct HeartInfo
+				{
+					float x, y, z;
+					float playerSpeed;
+				};
 
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem01 = new HeartItemComponent();
-				heartItem01->setPlayerSpeed(0.02f);
-				heartObj->addComponent(heartItem01);
-				AddSceneObject(heartObj);
+				HeartInfo heartInfo[heartNum]
+				{
+					3.0f, 0.0f, 8.0f,			0.02f,
+					-11.0f, -4.0f, 10.0f,		0.04f,
+					13.0f, -3.0f, 22.0f,		0.02f,
+					0.0f, -6.0f, 20.0f,			0.02f,
+					-7.0f, -4.0f, 18.0f,		0.02f,
+					20.0f, 0.0f, 20.0f,			0.02f,
+					25.0f, 1.0f, 15.0f,			0.03f,
+					7.0f, -8.0f, 30.0f,			0.01f,
+					15.0f, 0.0f, 10.0f,			0.02f,
+					10.0f, 15.0f, 10.0f,		0.1f
+				};
 
-				//====02====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(-11.0f, -4.0f, 10.0f);
+				//使いまわしするのでここで宣言
+				GameObject* heartObj;
+				HeartItemComponent* heartItem;	
 
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem02 = new HeartItemComponent();
-				heartItem02->setPlayerSpeed(0.04f);
-				heartObj->addComponent(heartItem02);
-				AddSceneObject(heartObj);
+				//ハート生成
+				for (int i = 0; i < heartNum; i++)
+				{
+					heartFbx = new FBXCharacterData();
+					heartFbx->SetMainFBX(L"GoldenHeart");
+					heartFbx->setPosition(heartInfo[i].x, heartInfo[i].y, heartInfo[i].z);
 
-				//====03====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(13.0f, -3.0f, 22.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem03 = new HeartItemComponent();
-				heartItem03->setPlayerSpeed(0.02f);
-				heartObj->addComponent(heartItem03);
-				AddSceneObject(heartObj);
-
-				//====04====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(0.0f, -6.0f, 20.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem04 = new HeartItemComponent();
-				heartItem04->setPlayerSpeed(0.02f);
-				heartObj->addComponent(heartItem04);
-				AddSceneObject(heartObj);
-
-				//====05====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(-7.0f, -4.0f, 18.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem05 = new HeartItemComponent();
-				heartItem05->setPlayerSpeed(0.02f);
-				heartObj->addComponent(heartItem05);
-				AddSceneObject(heartObj);
-
-				//====06====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(20.0f, 0.0f, 20.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem06 = new HeartItemComponent();
-				heartItem06->setPlayerSpeed(0.02f);
-				heartObj->addComponent(heartItem06);
-				AddSceneObject(heartObj);
-
-				//====07====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(25.0f, 1.0f, 15.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem07 = new HeartItemComponent();
-				heartItem07->setPlayerSpeed(0.03f);
-				heartObj->addComponent(heartItem07);
-				AddSceneObject(heartObj);
-
-				//====08====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(7.0f, -8.0f, 30.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem08 = new HeartItemComponent();
-				heartItem08->setPlayerSpeed(0.01f);
-				heartObj->addComponent(heartItem08);
-				AddSceneObject(heartObj);
-
-				//====09====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(15.0f, 0.0f, 10.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem09 = new HeartItemComponent();
-				heartItem09->setPlayerSpeed(0.02f);
-				heartObj->addComponent(heartItem09);
-				AddSceneObject(heartObj);
-
-				//====10====
-				heartFbx = new FBXCharacterData();
-				heartFbx->SetMainFBX(L"GoldenHeart");
-				heartFbx->setPosition(10.0f, 15.0f, 10.0f);
-
-				heartObj = new GameObject(heartFbx);
-				HeartItemComponent* heartItem10 = new HeartItemComponent();
-				heartItem10->setPlayerSpeed(0.1f);
-				heartObj->addComponent(heartItem10);
-				AddSceneObject(heartObj);
-
-				//====HeartSet End====
+					heartObj = new GameObject(heartFbx);
+					heartItem = new HeartItemComponent();
+					heartItem->setPlayerSpeed(heartInfo[i].playerSpeed);
+					heartObj->addComponent(heartItem);
+					AddSceneObject(heartObj);
+				}
 
 				//InGame BGM
 				SoundManager* soMng = engine->GetSoundManager();
