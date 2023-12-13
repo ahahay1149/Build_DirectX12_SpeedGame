@@ -2,6 +2,7 @@
 #include "FBXCharacterData.h"	//FBXCharacterDataを使うので
 
 #include "GamePrograming3Scene.h"
+#include "GameAccessHub.h"
 #include "KeyBindComponent.h"
 #include "GamePrograming3Enum.h"
 
@@ -16,9 +17,11 @@ void UnityChanPlayer::initAction()
 {
 	//FBXCharacterDataは基底クラスのGameObjectにセットする
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
-	//chdata->SetGraphicsPipeLine(L"StaticFBX");	//通常FBX
-	//chdata->SetGraphicsPipeLine(L"AnimationFBX");	//スキンアニメ有りFBX
-	chdata->SetGraphicsPipeLine(L"SkeltalLambert");	//スキンアニメ有りFBX+Lambert
+	//chdata->SetGraphicsPipeLine(L"StaticFBX");		//通常FBX
+	//chdata->SetGraphicsPipeLine(L"AnimationFBX");		//スキンアニメ有りFBX
+	//chdata->SetGraphicsPipeLine(L"SkeltalLambert");	//スキンアニメ有りFBX+Lambert
+	chdata->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
+	//chdata->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
 
 	chdata->SetMainFBX(L"UnityChan");
 
@@ -378,6 +381,6 @@ void UnityChanPlayer::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 	//プレイヤークラス側でもハートの取得数をカウント
 	m_getHeartItems++;
 
-	//UIクラスに取得数を増やしたことを伝える
-	GamePrograming3Scene::getUIRender()->plusHeartItemCount();
+	//取得数を増やしたことをGameManagerに伝える
+	GameAccessHub::getGameManager()->plusHeartItemCount();
 }

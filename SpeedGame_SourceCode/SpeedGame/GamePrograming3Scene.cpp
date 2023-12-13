@@ -1,10 +1,5 @@
 ﻿#include "GamePrograming3Scene.h"
 
-GamePrograming3Scene* GamePrograming3Scene::m_Scene = nullptr;
-UnityChanPlayer* GamePrograming3Scene::m_UnityChan = nullptr;
-GamePrograming3UIRender* GamePrograming3Scene::m_UIRender = nullptr;
-ResultUIRender* GamePrograming3Scene::m_ResultUIRender = nullptr;
-
 #include "GamePrograming3Enum.h"
 #include "MyAccessHub.h"
 #include "KeyBindComponent.h"
@@ -30,6 +25,8 @@ ResultUIRender* GamePrograming3Scene::m_ResultUIRender = nullptr;
 
 #include "TitleUIRender.h"					//タイトルUI
 #include "GameOverUIRender.h"				//ゲームオーバーUI
+
+#include "GameAccessHub.h"					//ゲームシステム用AccessHub
 
 //=====Camera Change Phase 1
 #include "GamePrograming3UIRender.h"
@@ -107,7 +104,6 @@ GamePrograming3Scene::~GamePrograming3Scene()
 
 HRESULT GamePrograming3Scene::initSceneController()
 {
-	setScene(this);
 
 	m_scene = static_cast<UINT>(GAME_SCENES::AWAKE);
 
@@ -202,18 +198,38 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				plMng->AddPipeLineObject(L"SkeltalLambert", fbxPL);
 				//======Lambert Pipeline End
 
+				//======Phong Pipeline
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::Lambert | StandardLightingPipeline::PIPELINE_FLAGS::Phong);
+				plMng->AddPipeLineObject(L"StaticPhong", fbxPL);
+
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::SKELTAL | StandardLightingPipeline::PIPELINE_FLAGS::Lambert | StandardLightingPipeline::PIPELINE_FLAGS::Phong);
+				plMng->AddPipeLineObject(L"SkeltalPhong", fbxPL);
+				//======Phong Pipeline End
+
+				//======Blinn Phong Pipeline
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::Lambert | StandardLightingPipeline::PIPELINE_FLAGS::Blinn);
+				plMng->AddPipeLineObject(L"StaticBlinn", fbxPL);
+
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::SKELTAL | StandardLightingPipeline::PIPELINE_FLAGS::Lambert | StandardLightingPipeline::PIPELINE_FLAGS::Blinn);
+				plMng->AddPipeLineObject(L"SkeltalBlinn", fbxPL);
+				//======Blinn Phong Pipeline End
+
 				//======Lighting
 				LightSettingManager* lightMng = LightSettingManager::GetInstance();
 				XMFLOAT3 lightColor;
 				XMFLOAT3 lightDirection;
 
 				//Ambient
-				lightColor = { 0.3f,0.3f,0.3f };	//1.0でライトの影響値ゼロ
+				lightColor = { 0.3f, 0.3f, 0.3f };	//1.0でライトの影響値ゼロ
 				lightMng->CreateAmbientLight(L"SCENE_AMBIENT", lightColor);	//登録名はFBXCharacterData参照
 
 				//DirectionalLight
-				lightColor = { 0.5f,0.5f,0.8f };			//昼光色的な
-				lightDirection = { -0.57f,-0.57f, 0.57f };	//左斜め下Z奥向き
+				lightColor = { 0.7f, 0.7f, 0.7f };			//昼光色的な
+				lightDirection = { -0.57f, -0.57f, 0.57f };	//左斜め下Z奥向き
 				lightMng->CreateDirectionalLight(L"SCENE_DIRECTIONAL", lightColor, lightDirection);	//登録名はFBXCharacterData参照
 				//======Lighting End
 
@@ -260,6 +276,14 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				m_keyComponent = new KeyBindComponent();
 				m_systemObject->addComponent(m_keyComponent);
 				engine->AddGameObject(m_systemObject.get());
+
+				//GameManagerオブジェクト登録
+				m_gameManagerObject = make_unique<GameObject>(nullptr);
+				m_gameManagerConponent = new GameManager();
+				m_gameManagerObject->addComponent(m_gameManagerConponent);
+				engine->AddGameObject(m_gameManagerObject.get());
+				GameAccessHub::setGameManager(m_gameManagerConponent);
+
 
 				engine->UploadCreatedTextures();
 
@@ -358,7 +382,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 				unityChanObj = new GameObject(unityChanFbx);	//FBXCharacterDataを持たせて初期化
 				unityChanObj->addComponent(unityChanPlayer);	//UnityChan本体コンポーネントをセット
-				setUnityChan(unityChanPlayer);					//UnityChan本体をAccessHubにセット
+				GameAccessHub::setUnityChan(unityChanPlayer);
 				AddSceneObject(unityChanObj);
 
 				//カメラ
@@ -408,7 +432,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				cameraObj = new GameObject(new CharacterData());
 				GamePrograming3UIRender* uiRender = new GamePrograming3UIRender();
 				cameraObj->addComponent(uiRender);
-				setUIRender(uiRender);
+				GameAccessHub::setInGameUIRender(uiRender);
 
 				AddSceneObject(cameraObj);
 
@@ -463,12 +487,6 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 					AddSceneObject(heartObj);
 				}
 
-				//InGame BGM
-				SoundManager* soMng = engine->GetSoundManager();
-				soMng->stop(playingMusic[1]);
-				soMng->stop(playingMusic[2]);
-				playingMusic[0] = soMng->play(0);
-
 				engine->UploadCreatedTextures();
 
 			}
@@ -476,10 +494,6 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 		case static_cast<UINT>(GAME_SCENES::GAME_OVER):
 			{
-				SoundManager* soMng = engine->GetSoundManager();
-				soMng->stop(playingMusic[0]);
-				playingMusic[1] = soMng->play(2);
-
 				GameObject* CameraObj = new GameObject(new CharacterData());
 				TitleSceneSample* overCamera = new TitleSceneSample();
 				CameraObj->addComponent(overCamera);
@@ -500,10 +514,6 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 		case static_cast<UINT>(GAME_SCENES::GAME_CLEAR):
 			{
-				SoundManager* soMng = engine->GetSoundManager();
-				soMng->stop(playingMusic[0]);
-				playingMusic[2] = soMng->play(1);
-
 				GameObject* cameraObj = new GameObject(new CharacterData());
 				TitleSceneSample* clearCamera = new TitleSceneSample();
 				cameraObj->addComponent(clearCamera);
@@ -511,7 +521,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				//======Camera Change Phase 1
 				ResultUIRender* uiRender = new ResultUIRender();
 				cameraObj->addComponent(uiRender);
-				setResultUIRender(uiRender);
+				GameAccessHub::setResultUIRender(uiRender);
 
 				//カメラリスト追加 UIモード時用
 				m_cameraComponents[L"HUDCamera"] = uiRender;
@@ -533,6 +543,9 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 		}
 
 		m_scene = scene;
+
+		//GameManagerでもシーン変更時の処理を実行する
+		GameAccessHub::getGameManager()->sendScene(scene);
 
 		engine->WaitForGpu();	//GPU待機（テクスチャアップロード等）
 	}

@@ -4,10 +4,6 @@
 #include <D3D12Helper.h>
 #include <stdio.h>
 
-#include "GamePrograming3Scene.h"
-#include "GamePrograming3Enum.h"
-#include "HeartItemComponent.h"
-
 void TitleUIRender::initAction()
 {
 	UIRenderBase::initAction();
@@ -16,7 +12,6 @@ void TitleUIRender::initAction()
 bool TitleUIRender::frameAction()
 {
 	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
-	GamePrograming3Scene* scene = GamePrograming3Scene::getScene();
 	GraphicsPipeLineObjectBase* pipeLine = engine->GetPipelineManager()->GetPipeLineObject(L"Sprite");
 
 	float x = -480.0f + 30.0f;	//中心0,0 w960 h540

@@ -32,6 +32,8 @@ public:
     {
         SKELTAL =   0x00000001,
         Lambert =   0x00000002,
+        Phong   =   0x00000004,
+        Blinn   =   0x00000008,
 
         LIGHTING_MASK = 0x0000000E,
     };

@@ -128,10 +128,15 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
 
     // テクスチャ用RANGEの作成
 
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
-    ZeroMemory(ranges, sizeof(CD3DX12_DESCRIPTOR_RANGE1));
+    CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
+    ZeroMemory(ranges, sizeof(CD3DX12_DESCRIPTOR_RANGE1) * 3);
 
     ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Texture
+
+    //======Specular + Normal
+    ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Specular Map
+    ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Normal Map
+    //======Specular + Normal End
 
     //SamplerStateの設定
     D3D12_STATIC_SAMPLER_DESC sampler = {};
@@ -152,8 +157,8 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     //RootSignature設定本体
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
 
-    CD3DX12_ROOT_PARAMETER1 rootParameters[7];  //基本MVPマトリクス 3 テクスチャ 1 + ボーン 1 + 環境光 1 + 平行光源 1
-    ZeroMemory(rootParameters, sizeof(CD3DX12_ROOT_PARAMETER1) * 7);
+    CD3DX12_ROOT_PARAMETER1 rootParameters[11];  //基本MVPマトリクス 3 テクスチャ 3 + マテリアル設定 1 + ボーン 1 + 環境光 1 + 平行光源 1 + カメラ光源 1
+    ZeroMemory(rootParameters, sizeof(CD3DX12_ROOT_PARAMETER1) * 11);
 
     //増える可能性あるので変数化
     int paramIndex = 0;
@@ -161,9 +166,21 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
 
     int texCount = 0;  //テクスチャSRVを保存するGPU内インデックス番号
 
+    //======Specular + Normal
+    // マテリアル設定 スロット番号6
+    rootParameters[paramIndex++].InitAsConstantBufferView(6, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
+    //======Specular + Normal End
+
     m_textureIndex = paramIndex;
     rootParameters[paramIndex++].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_PIXEL);   //Diffuse テクスチャ
     texCount++;    //テクスチャの数を保存
+
+    //======Specular + Normal
+    rootParameters[paramIndex++].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_PIXEL);   //Specular テクスチャ
+    texCount++;
+    rootParameters[paramIndex++].InitAsDescriptorTable(1, &ranges[2], D3D12_SHADER_VISIBILITY_PIXEL);   //Normal テクスチャ
+    texCount++;
+    //======Specular + Normal End
 
     m_worldMtxIndex = paramIndex;
     rootParameters[paramIndex++].InitAsConstantBufferView(2, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_ALL); //Model(World)
@@ -173,6 +190,10 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
 
     rootParameters[paramIndex++].InitAsConstantBufferView(0, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_ALL);   //Projection
     rootParameters[paramIndex++].InitAsConstantBufferView(1, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_ALL);   //View
+
+    //======Specular
+    rootParameters[paramIndex++].InitAsConstantBufferView(5, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_PIXEL);
+    //======Specular End
 
     m_lightIndex = paramIndex;
 
@@ -210,8 +231,21 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
         else
             ReadDataFromFile(L"Resources/shaders/StaticMeshVertexShader.cso", &meshShader.data, &meshShader.size);
 
-        // ピクセルシェーダは共通(変える可能性あり)
-        ReadDataFromFile(L"Resources/shaders/LightingPixelShader.cso", &pixelShader.data, &pixelShader.size);
+        //===Phong
+        if (m_pipelineFlg & PIPELINE_FLAGS::Phong)
+        {
+            ReadDataFromFile(L"Resources/shaders/PhongShader.cso", &pixelShader.data, &pixelShader.size);
+        }
+        //===Blinn Phong
+        else if (m_pipelineFlg & PIPELINE_FLAGS::Blinn)
+        {
+            ReadDataFromFile(L"Resources/shaders/BlinnPhongShader.cso", &pixelShader.data, &pixelShader.size);
+        }
+        //===Other
+        else
+        {
+            ReadDataFromFile(L"Resources/shaders/LightingPixelShader.cso", &pixelShader.data, &pixelShader.size);
+        }
 
 		// 05: ここまで
     }
@@ -230,7 +264,9 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
         { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0 ,24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+
         { "TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 
         { "BLENDINDICES", 0, DXGI_FORMAT_R32G32B32A32_UINT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
@@ -246,7 +282,7 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     if (m_pipelineFlg & PIPELINE_FLAGS::SKELTAL)
         psoDesc.InputLayout = { layout, _countof(layout) };
     else
-        psoDesc.InputLayout = { layout, 4 };
+        psoDesc.InputLayout = { layout, 5 };
 
     // RootSignatureとシェーダの登録
     psoDesc.pRootSignature = m_rootSignature.Get();
@@ -418,6 +454,12 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
                 prmIndex++;
                 cmdList->SetGraphicsRootConstantBufferView(prmIndex, p_prjMtx->GetGPUVirtualAddress());//Projection
                 prmIndex++;
+
+                //======Specular
+                ID3D12Resource* p_CamPos = camChar->GetConstantBuffer(CB_CAM_POSITION_INDEX);
+                cmdList->SetGraphicsRootConstantBufferView(prmIndex, p_CamPos->GetGPUVirtualAddress()); //Camera Pos
+                prmIndex++;
+                //======Specular End
             }
         }
         //========Camera
@@ -448,13 +490,33 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
                 materialLabel = mesh->m_MaterialId;
                 MaterialContainer* matCon = mainFbx->GetMaterialContainer(mesh->m_MaterialId);
 
+                //======Specular & Normal Map
+                // MaterialInfo
+                cmdList->SetGraphicsRootConstantBufferView(0, matCon->GetMaterialInfoResource()->GetGPUVirtualAddress());
+                //======Specular & Normal Map End
+
                 //Diffuse
                 int texLen = matCon->m_diffuseTextures.size();
-
                 if (texLen > 0)
                 {
                     SetTextureToCommandLine(engine, pTextureMng, cmdList, m_textureIndex, matCon->m_diffuseTextures[0]);
                 }
+
+                //======Specular & Normal Map
+                // テクスチャの登録順はDiffuse Specular NormalでRootSignatureに登録しているので順番は固定
+                //Specular
+                texLen = matCon->m_specularTextures.size();
+                if (texLen > 0)
+                {
+                    SetTextureToCommandLine(engine, pTextureMng, cmdList, m_textureIndex + 1, matCon->m_specularTextures[0]);
+                }
+
+                texLen = matCon->m_normalTextures.size();
+                if (texLen > 0)
+                {
+                    SetTextureToCommandLine(engine, pTextureMng, cmdList, m_textureIndex + 2, matCon->m_normalTextures[0]);
+                }
+                //======Specular & Normal Map End
             }
 
             //Drawコマンド

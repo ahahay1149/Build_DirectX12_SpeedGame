@@ -1,7 +1,7 @@
 ﻿#include "HeartItemComponent.h"
 #include "FBXCharacterData.h"	//FBXCharacterDataを使うので
 
-#include "GamePrograming3Scene.h"
+#include "GameAccessHub.h"
 #include "GamePrograming3Enum.h"
 
 #include "UnityChanPlayer.h"
@@ -10,7 +10,10 @@ void HeartItemComponent::initAction()
 {
 	//FBXCharacterDataは基底クラスのGameObjectにセットする
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
-	chdata->SetGraphicsPipeLine(L"StaticFBX");
+	//chdata->SetGraphicsPipeLine(L"StaticFBX");
+	//chdata->SetGraphicsPipeLine(L"StaticLambert");	//Lambert
+	chdata->SetGraphicsPipeLine(L"StaticPhong");		//Phong
+	//chdata->SetGraphicsPipeLine(L"StaticBlinn");		//Blinn Phong
 
 	chdata->setScale(0.01f, 0.01f, 0.01f);	//元モデルがかなり大きい（というかスカイドームとかとあってない）ので縮小
 
@@ -66,7 +69,7 @@ void HeartItemComponent::finishAction()
 void HeartItemComponent::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 {
 	sta = 1;
-	UnityChanPlayer* unityChan = GamePrograming3Scene::getUnityChan();
+	UnityChanPlayer* unityChan = GameAccessHub::getUnityChan();
 	unityChan->plusSpeedCount(m_playerSpeed);
 }
 

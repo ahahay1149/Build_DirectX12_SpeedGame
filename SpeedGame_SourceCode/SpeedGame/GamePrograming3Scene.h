@@ -9,10 +9,7 @@
 //地形判定対応
 #include "TerrainComponent.h"
 
-#include "UnityChanPlayer.h"
-#include "GamePrograming3UIRender.h"
-#include "ResultUIRender.h"
-
+#include "GameManager.h"
 
 //=========Scene Change
 class GamePrograming3Scene;
@@ -34,11 +31,6 @@ public:
 class GamePrograming3Scene : public SceneController
 {
 private:
-	//各クラスのアクセス指定子
-	static GamePrograming3Scene* m_Scene;
-	static UnityChanPlayer* m_UnityChan;
-	static GamePrograming3UIRender* m_UIRender;
-	static ResultUIRender* m_ResultUIRender;
 
 	//再生を行っている音のidを格納する
 	int playingMusic[3];
@@ -48,6 +40,9 @@ private:
 	float bestScore = 0;
 
 	std::unique_ptr<GameObject> m_systemObject;
+
+	std::unique_ptr<GameObject> m_gameManagerObject;
+	GameManager* m_gameManagerConponent;
 
 	//====CameraFix
 	GameComponent* m_keyComponent;
@@ -83,50 +78,6 @@ public:
 		}
 
 		return nullptr;
-	}
-
-	//Scene Class
-	static void setScene(GamePrograming3Scene* Scene)
-	{
-		m_Scene = Scene;
-	}
-
-	static GamePrograming3Scene* getScene()
-	{
-		return m_Scene;
-	}
-
-	//UnityChan Class
-	static void setUnityChan(UnityChanPlayer* unityChan)
-	{
-		m_UnityChan = unityChan;
-	}
-
-	static UnityChanPlayer* getUnityChan()
-	{
-		return m_UnityChan;
-	}
-
-	//InGameUI Class
-	static void setUIRender(GamePrograming3UIRender* UIRender)
-	{
-		m_UIRender = UIRender;
-	}
-
-	static GamePrograming3UIRender* getUIRender()
-	{
-		return m_UIRender;
-	}
-
-	//ResultUI Class
-	static void setResultUIRender(ResultUIRender* UIRender)
-	{
-		m_ResultUIRender = UIRender;
-	}
-
-	static ResultUIRender* getResultUIRender()
-	{
-		return m_ResultUIRender;
 	}
 
 	void setClearCount(float timer)

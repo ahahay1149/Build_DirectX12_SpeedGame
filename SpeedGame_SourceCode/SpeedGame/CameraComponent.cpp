@@ -22,6 +22,11 @@ void CameraComponent::initAction()
 	//カメラ用定数バッファをCharacterDataに登録
 	engine->InitCameraConstantBuffer(chData);
 
+	//======Specular
+	XMFLOAT3 fl3 = {};
+	chData->AddConstantBuffer(sizeof(XMVECTOR), &fl3);	//2 for CameraPos
+	//======Specular End
+
 	updateFlg = true;
 }
 

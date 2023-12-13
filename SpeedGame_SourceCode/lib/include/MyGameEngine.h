@@ -28,6 +28,10 @@
 #define CB_CAM_VIEW_INDEX (0)
 #define CB_CAM_PROJECTION_INDEX (1)
 
+//======Specular
+#define CB_CAM_POSITION_INDEX (2)
+//======Specular End
+
 using Microsoft::WRL::ComPtr;
 
 using namespace DirectX;

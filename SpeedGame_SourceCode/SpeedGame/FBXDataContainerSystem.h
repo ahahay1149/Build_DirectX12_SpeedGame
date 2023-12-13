@@ -19,6 +19,11 @@ struct FbxVertex
 {
 	XMFLOAT3 position;
 	XMFLOAT3 normal;
+
+	//======Normal Map
+	XMFLOAT3 tangent;
+	//======Normal Map End
+
 	XMFLOAT4 color;
 	XMFLOAT2 uv;
 };
@@ -37,20 +42,32 @@ struct FbxSkinAnimeParams
 struct FbxSkinAnimeVertex
 {
 	FbxVertex			vertex;
-
 	FbxSkinAnimeParams	skinvalues;
 };
 // ここまで
 
+//=======Specular
+struct FbxMaterialInfo
+{
+	XMFLOAT4 ambient;
+	XMFLOAT4 diffuse;
+	XMFLOAT4 specular;
+
+	UINT TextureFlag;
+};
+//=======Specular End
+
 enum class FBX_TEXTURE_TYPE
 {
-	FBX_DIFFUSE,
-	FBX_NORMAL,
-	FBX_SPECUAR,
-	FBX_FALLOFF,
-	FBX_REFLECTIONMAP,
+	//=======Specular
+	FBX_DIFFUSE = 0x01,
+	FBX_NORMAL = 0x02,
+	FBX_SPECUAR = 0x04,
+	FBX_FALLOFF = 0x08,
+	FBX_REFLECTIONMAP = 0x10,
 
-	FBX_UNKNOWN
+	FBX_UNKNOWN = 0x80
+	//=======Specular End
 };
 
 class FBXDataContainer;
@@ -113,12 +130,15 @@ class MaterialContainer
 {
 private:
 	bool	m_uniqueTextures = true;
+	//=======Specular
+	ComPtr<ID3D12Resource> m_d3dresource;
+	//=======Specular End
 
 public:
-	float ambient[4];
-	float diffuse[4];
-	float specular[4];
-	float alpha;
+	//=======Specular
+	FbxMaterialInfo materialInfo;
+	//=======Specular End
+
 	std::vector<std::wstring>	m_diffuseTextures;
 	std::vector<std::wstring>	m_normalTextures;
 	std::vector<std::wstring>	m_specularTextures;
@@ -127,14 +147,25 @@ public:
 
 	MaterialContainer()
 	{
-		for (int i = 0; i < 4; i++)
-		{
-			ambient[i] = 1.0f;
-			diffuse[i] = 1.0f;
-			specular[i] = 1.0f;
-		}
+		//=======Specular
+		materialInfo.ambient.x = 1.0f;
+		materialInfo.diffuse.x = 1.0f;
+		materialInfo.specular.x = 1.0f;
+		materialInfo.ambient.y = 1.0f;
+		materialInfo.diffuse.y = 1.0f;
+		materialInfo.specular.y = 1.0f;
+		materialInfo.ambient.z = 1.0f;
+		materialInfo.diffuse.z = 1.0f;
+		materialInfo.specular.z = 1.0f;
+		materialInfo.ambient.w = 1.0f;
+		materialInfo.diffuse.w = 1.0f;
+		materialInfo.specular.w = 1.0f;
 
-		alpha = 1.0f;
+		materialInfo.TextureFlag = 0;
+
+		MyGameEngine* engine = MyAccessHub::getMyGameEngine();
+		engine->CreateConstantBuffer(m_d3dresource.GetAddressOf(), &materialInfo, sizeof(FbxMaterialInfo));
+		//=======Specular End
 
 		m_diffuseTextures.clear();
 		m_normalTextures.clear();
@@ -152,28 +183,42 @@ public:
 
 	void setAmbient(float r, float g, float b, float factor)
 	{
-		ambient[0] = r;
-		ambient[1] = g;
-		ambient[2] = b;
-		ambient[3] = factor;
+		//=======Specular
+		materialInfo.ambient.x = r;
+		materialInfo.ambient.y = g;
+		materialInfo.ambient.z = b;
+		materialInfo.ambient.w = factor;
+		//=======Specular End
 	}
 
 	void setDiffuse(float r, float g, float b, float factor)
 	{
-		diffuse[0] = r;
-		diffuse[1] = g;
-		diffuse[2] = b;
-		diffuse[3] = factor;
+		//=======Specular
+		materialInfo.diffuse.x = r;
+		materialInfo.diffuse.y = g;
+		materialInfo.diffuse.z = b;
+		materialInfo.diffuse.w = factor;
+		//=======Specular End
 	}
 
 	void setSpecular(float r, float g, float b, float factor)
 	{
-		specular[0] = r;
-		specular[1] = g;
-		specular[2] = b;
-		specular[3] = factor;
+		//=======Specular
+		materialInfo.specular.x = r;
+		materialInfo.specular.y = g;
+		materialInfo.specular.z = b;
+		materialInfo.specular.w = factor;
+		//=======Specular End
 	}
 
+	//=======Specular
+	void UpdateD3DResource();
+
+	ID3D12Resource* GetMaterialInfoResource()
+	{
+		return m_d3dresource.Get();
+	}
+	//=======Specular End
 };
 
 class FBXDataContainer

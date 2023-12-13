@@ -5,8 +5,6 @@ class ResultUIRender :
     public UIRenderBase
 {
 private:
-    float clearCount = 0;
-    float bestScore = 0;
 
     char clearCountText[64] = "";
     char bestScoreText[64] = "";

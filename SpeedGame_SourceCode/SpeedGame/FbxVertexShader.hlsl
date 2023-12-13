@@ -2,6 +2,9 @@ struct VS_IN
 {
 	float3 pos : POSITION0;
 	float3 nor : NORMAL0;
+	//======Normal Map
+    float3 tan : TANGENT0;
+	//======Normal Map End
 	float4 color : COLOR0;
 	float2 uv : TEXTURE0;
 };

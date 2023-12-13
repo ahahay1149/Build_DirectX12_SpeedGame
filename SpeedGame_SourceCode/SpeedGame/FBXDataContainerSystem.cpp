@@ -117,8 +117,6 @@ HRESULT FBXDataContainer::ReadFbxToMeshContainer(const std::wstring id, FbxMesh*
 	meshCont->m_vtxMax.y = FLT_MIN;
 	meshCont->m_vtxMax.z = FLT_MIN;
 
-	//right to left hand
-	//FbxAxisSystem
 
 
 	for (int i = 0; i < vertexCount; i++)
@@ -227,6 +225,19 @@ HRESULT FBXDataContainer::ReadFbxToMeshContainer(const std::wstring id, FbxMesh*
 		meshCont->m_vertexData[i].normal.x = normals[i][0];
 		meshCont->m_vertexData[i].normal.y = normals[i][1];
 		meshCont->m_vertexData[i].normal.z = normals[i][2];
+
+		//======Normal Map
+		// normalと上方向ベクトル(0,1,0)の外積でTangentベクトルを取得
+		XMFLOAT3 normal = meshCont->m_vertexData[i].normal;
+		XMFLOAT3 tanVect = { 1.0f,0.0f,0.0f };	//normalが0,1,0だった場合のTangent
+
+		//外積計算
+		if (normal.y < 0.99f)
+		{
+			tanVect = { -normal.z, 0.0f, normal.x };
+		}
+		meshCont->m_vertexData[i].tangent = tanVect;
+		//======Normal Map End
 	}
 
 	//頂点カラー
@@ -300,7 +311,7 @@ HRESULT FBXDataContainer::ReadFbxToMeshContainer(const std::wstring id, FbxMesh*
 	//頂点数保存
 	meshCont->m_vertexCount = vertexCount;
 
-	//:SkinAnime09
+	//SkinAnime09
 	//ボーン、スキンの読み込み
 	//メッシュに設定されているスキンの数を取得
 	int skinCount = pMesh->GetDeformerCount(FbxDeformer::eSkin);
@@ -326,7 +337,7 @@ HRESULT FBXDataContainer::ReadFbxToMeshContainer(const std::wstring id, FbxMesh*
 			FbxSkin* pSkin = (FbxSkin*)pMesh->GetDeformer(skinloop, FbxDeformer::eSkin);
 
 			skinWeights[skinloop].clear();
-			skinWeights[skinloop].resize(contCount);	//WeightデータはVertexではなくControllPoint用
+			skinWeights[skinloop].resize(contCount);    //WeightデータはVertexではなくControllPoint用
 
 			//スキンの中に幾つのボーン構造があるのかを取得
 			int clusterCount = pSkin->GetClusterCount();
@@ -455,15 +466,23 @@ HRESULT FBXDataContainer::LoadMaterial(const std::wstring id, FbxSurfaceMaterial
 		{
 			FbxSurfaceMaterial::sAmbient,
 			FbxSurfaceMaterial::sDiffuse,
+
+			//=====Specular
+			FbxSurfaceMaterial::sSpecular,
+			//=====Specular End
 		};
 
 		const char* factor_check_list[] =
 		{
 			FbxSurfaceMaterial::sAmbientFactor,
 			FbxSurfaceMaterial::sDiffuseFactor,
+
+			//=====Specular
+			FbxSurfaceMaterial::sSpecularFactor,
+			//=====Specular End
 		};
 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 3; i++)
 		{
 			fbxProp = material->FindProperty(element_check_list[i]);
 			if (fbxProp.IsValid())
@@ -487,6 +506,16 @@ HRESULT FBXDataContainer::LoadMaterial(const std::wstring id, FbxSurfaceMaterial
 			}
 		}
 	}
+	//=====Specular
+	else
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			colors[i] = FbxDouble3(1.0, 1.0, 1.0);
+			factors[i] = 1.0;
+		}
+	}
+	//=====Specular End
 
 	FbxDouble3 color = colors[(int)MaterialOrder::Ambient];
 	FbxDouble factor = factors[(int)MaterialOrder::Ambient];
@@ -495,6 +524,12 @@ HRESULT FBXDataContainer::LoadMaterial(const std::wstring id, FbxSurfaceMaterial
 	color = colors[(int)MaterialOrder::Diffuse];
 	factor = factors[(int)MaterialOrder::Diffuse];
 	m_pMaterialContainer[matName]->setDiffuse((float)color[0], (float)color[1], (float)color[2], (float)factor);
+
+	//=====Specular
+	color = colors[(int)MaterialOrder::Specular];
+	factor = factors[(int)MaterialOrder::Specular];
+	m_pMaterialContainer[matName]->setSpecular((float)color[0], (float)color[1], (float)color[2], (float)factor);
+	//=====Specular End
 
 	// テクスチャ読み込み(シングル対応)
 	// マルチテクスチャはシェーダから別。今回は未対応。対応させたいが…
@@ -522,6 +557,10 @@ HRESULT FBXDataContainer::LoadMaterial(const std::wstring id, FbxSurfaceMaterial
 			LoadTextureFromMaterial(matName, id, GetTextureType(entry), &fbxProp);
 		}
 	}
+
+	//======Specular 
+	m_pMaterialContainer[matName]->UpdateD3DResource();
+	//======Specular End 
 
 	return hr;
 }
@@ -633,6 +672,10 @@ HRESULT FBXDataContainer::LoadTextureFromMaterial(const std::wstring matName, co
 			default:	//Unknown
 				break;
 			}
+
+			//=====Specular
+			m_pMaterialContainer[matName]->materialInfo.TextureFlag |= (unsigned int)texType;
+			//=====Specular End
 		}
 	}
 
@@ -729,15 +772,14 @@ HRESULT FBXDataContainer::LoadFBX(const std::wstring fileName, const std::wstrin
 		//06: FBXのモデルデータを三角形ポリゴンデータに変換
 		FbxGeometryConverter converter(fbx_manager);
 		converter.SplitMeshesPerMaterial(fbx_scene, true);	//マテリアルごとにメッシュを分解
-		converter.Triangulate(fbx_scene, true);				//四角とか混ざってるかもしれないFBXを全部三角形だけに変換。
+		converter.Triangulate(fbx_scene, true);             //四角とか混ざってるかもしれないFBXを全部三角形だけに変換
 		//06: ここまで
 
 		// SkinAnime01
 		//アニメデータチェック
 		if (fbx_importer->GetAnimStackCount() > 0)
-			//if (takeInfo != nullptr)
 		{
-			auto stack = fbx_scene->GetCurrentAnimationStack(); //GetSrcObject<FbxAnimStack>(0);
+			auto stack = fbx_scene->GetCurrentAnimationStack();
 
 			m_startTime = stack->GetLocalTimeSpan().GetStart().GetSecondDouble();
 			m_endTime = stack->GetLocalTimeSpan().GetStop().GetSecondDouble();
@@ -758,7 +800,7 @@ HRESULT FBXDataContainer::LoadFBX(const std::wstring fileName, const std::wstrin
 		//一つのFBXは複数のMeshを持っている事があるので総数を取得してループ
 		m_pMeshContainer.clear();	//MeshContainerをクリア
 
-		int materialCnt;// = fbx_scene->GetMaterialCount();
+		int materialCnt;
 		if (noMaterial)
 		{
 			m_pFbxScene = fbx_scene;
@@ -952,6 +994,14 @@ MaterialContainer::~MaterialContainer()
 	m_falloffTextures.clear();
 	m_reflectionMapTextures.clear();
 }
+
+//=======Specular
+void MaterialContainer::UpdateD3DResource()
+{
+	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
+	engine->UpdateShaderResourceOnGPU(m_d3dresource.Get(), &materialInfo, sizeof(FbxMaterialInfo));
+}
+//=======Specular End
 
 // SkinAnime08
 //スキンアニメフレーム関係メソッド(MeshContainer)

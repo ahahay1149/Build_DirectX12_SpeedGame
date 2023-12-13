@@ -5,9 +5,7 @@
 #include <stdio.h>
 
 #include "GamePrograming3Scene.h"
-#include "GamePrograming3Enum.h"
-#include "HeartItemComponent.h"
-#include "UnityChanPlayer.h"
+#include "GameAccessHub.h"
 
 void ResultUIRender::initAction()
 {
@@ -17,7 +15,7 @@ void ResultUIRender::initAction()
 bool ResultUIRender::frameAction()
 {
 	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
-	GamePrograming3Scene* scene = GamePrograming3Scene::getScene();
+	GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(engine->GetSceneController());
 	GraphicsPipeLineObjectBase* pipeLine = engine->GetPipelineManager()->GetPipeLineObject(L"Sprite");
 
 	float x = -480.0f + 30.0f;	//中心0,0 w960 h540
@@ -25,18 +23,11 @@ bool ResultUIRender::frameAction()
 
 	int count = 0;
 
-	clearCount = scene->getClearCount();
-	bestScore = scene->getBestScore();
-
-	//現在のタイムとベストタイムを比較し、タイムの上書きを行う
-	if (clearCount > bestScore)
-	{
-		bestScore = clearCount;
-		scene->setBestScore(bestScore);
-	}
+	float clearScore = GameAccessHub::getGameManager()->getclearScore();
+	float bestScore = GameAccessHub::getGameManager()->getBestScore();
 
 	//現在のタイム
-	sprintf_s(clearCountText, "Time [%.3f]", clearCount);
+	sprintf_s(clearCountText, "Time [%.3f]", clearScore);
 	//ベストタイム
 	sprintf_s(bestScoreText, "Best Time <%.3f>", bestScore);
 
@@ -44,8 +35,9 @@ bool ResultUIRender::frameAction()
 	count = MakeSpriteString(count, x + 180, y - 350, 24, 24, bestScoreText);
 	count = MakeSpriteString(count, -215, -180, 24, 24, retryText);
 	count = MakeSpriteString(count, -170, -210, 24, 24, titleText);
+
 	//ベストスコアなら通知を1秒間隔で点滅させる
-	if (clearCount >= bestScore)
+	if (clearScore >= bestScore)
 	{
 		scoreUpdateTimer += 1;
 		if ((scoreUpdateTimer / 60) % 2 == 0)
