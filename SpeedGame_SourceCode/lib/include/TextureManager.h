@@ -68,6 +68,11 @@ public:
 
 	HRESULT CreateTextureFromFile(ID3D12Device* pD3D, std::wstring labelName, const wchar_t* filename);
 
+	//=====MultiPath Rendering
+	HRESULT CreateRenderTargetTexture(ID3D12Device* pD3D, std::wstring labelName, UINT width, UINT height,
+		DXGI_FORMAT dxgiFormat = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, UINT cpuFlag = 0);
+	//=====MultiPath Rendering End
+
 	HRESULT UploadCreatedTextures(ID3D12Device* pD3D, ID3D12GraphicsCommandList* pCmdList, ID3D12CommandQueue* pCmdQueue);
 
 	void ReleaseTexture(std::wstring labelName, bool removeSlot = false);

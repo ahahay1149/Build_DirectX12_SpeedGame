@@ -128,8 +128,8 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
 
     // テクスチャ用RANGEの作成
 
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[3];
-    ZeroMemory(ranges, sizeof(CD3DX12_DESCRIPTOR_RANGE1) * 3);
+    CD3DX12_DESCRIPTOR_RANGE1 ranges[4];
+    ZeroMemory(ranges, sizeof(CD3DX12_DESCRIPTOR_RANGE1) * 4);
 
     ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Texture
 
@@ -137,6 +137,9 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Specular Map
     ranges[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 2, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Normal Map
     //======Specular + Normal End
+    //======Toon Shader
+    ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //ColorTone Texture
+    //======Toon Shader End
 
     //SamplerStateの設定
     D3D12_STATIC_SAMPLER_DESC sampler = {};
@@ -157,12 +160,12 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     //RootSignature設定本体
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
 
-    CD3DX12_ROOT_PARAMETER1 rootParameters[11];  //基本MVPマトリクス 3 テクスチャ 3 + マテリアル設定 1 + ボーン 1 + 環境光 1 + 平行光源 1 + カメラ光源 1
-    ZeroMemory(rootParameters, sizeof(CD3DX12_ROOT_PARAMETER1) * 11);
+    CD3DX12_ROOT_PARAMETER1 rootParameters[12];  //基本MVPマトリクス 3 テクスチャ 4 + マテリアル設定 1 + ボーン 1 + 環境光 1 + 平行光源 1 + カメラ光源 1
+    ZeroMemory(rootParameters, sizeof(CD3DX12_ROOT_PARAMETER1) * 12);
 
     //増える可能性あるので変数化
     int paramIndex = 0;
-    m_textureIndex = m_worldMtxIndex = m_lightIndex = -1;
+    m_textureIndex = m_worldMtxIndex = m_lightIndex = m_toneIndex = -1;
 
     int texCount = 0;  //テクスチャSRVを保存するGPU内インデックス番号
 
@@ -204,6 +207,12 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
         D3D12_SHADER_VISIBILITY_PIXEL); //環境光 ボーンとレジスタ被らせてる
 	// 04: ここまで
 
+    //======Toon Shader
+    m_toneIndex = paramIndex;
+    rootParameters[paramIndex++].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_PIXEL);
+    texCount++;
+    //======Toon Shader End
+
     rootSignatureDesc.Init_1_1(paramIndex, rootParameters, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
  
     // RootSignatureの作成
@@ -231,8 +240,13 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
         else
             ReadDataFromFile(L"Resources/shaders/StaticMeshVertexShader.cso", &meshShader.data, &meshShader.size);
 
+        //===Toon
+        if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
+        {
+            ReadDataFromFile(L"Resources/shaders/ToonShader.cso", &pixelShader.data, &pixelShader.size);
+        }
         //===Phong
-        if (m_pipelineFlg & PIPELINE_FLAGS::Phong)
+        else if (m_pipelineFlg & PIPELINE_FLAGS::Phong)
         {
             ReadDataFromFile(L"Resources/shaders/PhongShader.cso", &pixelShader.data, &pixelShader.size);
         }
@@ -319,6 +333,11 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     //最初のターゲットのみ有効
     psoDesc.BlendState.RenderTarget[0].BlendEnable = true;
 
+    //======Toon Shader
+    if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
+        psoDesc.BlendState.RenderTarget[1].BlendEnable = true;  //法線保存用
+    //======Toon Shader End
+
     // Depth Stencilの設定
     psoDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
     psoDesc.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
@@ -337,10 +356,34 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     // プリミティブトポロジの設定
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-    // ターゲットは今回一つのみ
-    psoDesc.NumRenderTargets = 1;
+    //======Normal Buff
+    if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
+    {
+        //メインと法線保存用の2つ
+        psoDesc.NumRenderTargets = 2;
+        //必要なのは2つだけなので2-7は設定しない
+        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+        psoDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+        D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+        rtvHeapDesc.NumDescriptors = 1;
+        rtvHeapDesc.NodeMask = 0;
+        rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+        rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+        ThrowIfFailed(d3dDev->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(m_rtvHeap.GetAddressOf())));
+        
+        //======Post Effect
+        m_postEffect = MyAccessHub::getMyGameEngine()->GetPostEffectPipelineManager()->GetPipeLineObject(L"EdgeDraw");
+        //======Post Effect End
+    }
+    //======Normal Buff End
+    else
+    {
+        // ターゲットは今回一つのみ
+        psoDesc.NumRenderTargets = 1;
+
+        psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    }
 
     // GraphicsPipelineState作成
     ThrowIfFailed(d3dDev->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(m_pipeLineState.GetAddressOf())));
@@ -400,16 +443,41 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
     ThrowIfFailed(cmdList->Reset(cmdAl, m_pipeLineState.Get()));
     // この時コマンドリスト内にQueueで実行中のコマンドが残っているとエラー
 
-    CD3DX12_RESOURCE_BARRIER tra[1];
+    CD3DX12_RESOURCE_BARRIER tra[2];
 
     tra[0] =
         CD3DX12_RESOURCE_BARRIER::Transition(engine->GetRenderTarget(frameIndex),
             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-    cmdList->ResourceBarrier(1, tra);  //セット。第一引数は設定の数
+    //======Edge Draw
+    if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
+    {
+        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle[2];
+        CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(engine->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
 
-    // RenderTargetとViewPortの設定。
-    engine->SetMainRenderTarget(cmdList);
+        rtvHandle[0] = { engine->GetRTVHeap()->GetCPUDescriptorHandleForHeapStart(),
+                            (int)frameIndex, engine->GetRTVDescSize() };
+
+        rtvHandle[1] = { pTextureMng->GetTexture(L"NormalBuffer")->descHeap->GetCPUDescriptorHandleForHeapStart(),
+                            0, engine->GetRTVDescSize() };  //法線バッファをRTVHeapに登録
+
+        cmdList->OMSetRenderTargets(2, rtvHandle, FALSE, &dsvHandle);   //2つのRTVとDSV
+        engine->SetDefaultViewportAndRect(cmdList);
+
+        //Resource Barrierの設定
+        tra[1] = CD3DX12_RESOURCE_BARRIER::Transition(pTextureMng->GetTexture(L"NormalBuffer")->m_pTexture.Get(),
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+            D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+        cmdList->ResourceBarrier(2, tra);   //第一引数は設定の数
+    }
+    else
+    {
+        cmdList->ResourceBarrier(1, tra);   //第一引数は設定の数
+        //RenderTargetとViewPortの設定
+        engine->SetMainRenderTarget(cmdList);
+    }
+    //======Edge Draw End
 
     // RootSignatureのセット
     cmdList->SetGraphicsRootSignature(m_rootSignature.Get());
@@ -420,6 +488,14 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
     // ディスクリプタヒープ
     ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
     cmdList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+
+    //======Toon Shader
+    if (m_toneIndex > -1)
+    {
+        //ToneShaderに対応しているパイプラインの場合はトゥーンテクスチャを設定
+        SetTextureToCommandLine(engine, pTextureMng, cmdList, m_toneIndex, L"ToneTexture");
+    }
+    //======Toon Shader End
 
     // メッシュ個別設定
     for (auto charaData : m_renderList)
@@ -528,8 +604,20 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
     // リソースバリア解除   
     tra[0] = CD3DX12_RESOURCE_BARRIER::Transition(engine->GetRenderTarget(frameIndex), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 
-    // リソースバリアコマンドセット
-    cmdList->ResourceBarrier(1, tra);
+    //======Edge Draw
+    if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
+    {
+        tra[1] = CD3DX12_RESOURCE_BARRIER::Transition(pTextureMng->GetTexture(L"NormalBuffer")->m_pTexture.Get(),
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+        cmdList->ResourceBarrier(2, tra);
+    }
+    else
+    {
+        cmdList->ResourceBarrier(1, tra);
+    }
+    //======Edge Draw End
 
     m_renderList.clear();
     cmdList->Close();
@@ -540,6 +628,13 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
 void StandardLightingPipeline::AddRenerObject(CharacterData* obj)
 {
     GraphicsPipeLineObjectBase::AddRenerObject(obj);    //通常処理
+
+    //======Post Effect
+    if (m_postEffect != nullptr)
+    {
+        m_postEffect->AddRenerObject(obj);  //描画対象の有無だけ確認
+    }
+    //======Post Effect End
 
     MyGameEngine* engine = MyAccessHub::getMyGameEngine();
 

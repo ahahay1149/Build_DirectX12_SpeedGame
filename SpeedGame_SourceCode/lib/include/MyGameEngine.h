@@ -88,6 +88,11 @@ private:
     //PipeLine
     unique_ptr<PipeLineManager> m_pipelineMng;
 
+    //======G Buffer
+    unique_ptr<PipeLineManager> m_PrePipelineMng;   //描画前パイプライン
+    unique_ptr<PipeLineManager> m_PEPipelineMng;    //描画後パイプライン
+    //======G Buffer End
+
     //メッシュ
     unique_ptr<MeshManager>     m_meshMng;
 
@@ -172,6 +177,18 @@ public:
     {
         return m_pipelineMng.get();
     }
+
+    //======G Buffer
+    PipeLineManager* GetPreDrawPipelineManager()
+    {
+        return m_PrePipelineMng.get();
+    }
+
+    PipeLineManager* GetPostEffectPipelineManager()
+    {
+        return m_PEPipelineMng.get();
+    }
+    //======G Buffer
 
     MeshManager* GetMeshManager()
     {

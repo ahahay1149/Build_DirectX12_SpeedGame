@@ -58,6 +58,73 @@ HRESULT TextureManager::CreateTextureFromFile(ID3D12Device* pD3D, std::wstring l
 	return hr;
 }
 
+//======MultiPath Rendering
+HRESULT TextureManager::CreateRenderTargetTexture(ID3D12Device* pD3D, std::wstring labelName, UINT width, UINT height, DXGI_FORMAT dxgiFormat, UINT cpuFlag)
+{
+	HRESULT hr = E_FAIL;
+
+	m_textureDB[labelName].reset(new Texture2DContainer());
+
+	D3D12_RESOURCE_DESC renderTexDesc{};
+	renderTexDesc.Format = dxgiFormat;
+	renderTexDesc.Width = width;
+	renderTexDesc.Height = height;
+	renderTexDesc.MipLevels = 1;
+	renderTexDesc.DepthOrArraySize = 1;
+	renderTexDesc.SampleDesc.Count = 1;
+	renderTexDesc.SampleDesc.Quality = 0;
+	renderTexDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+	renderTexDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+
+	float clColor[4] = { 0, 0, 0, 0 };
+	D3D12_CLEAR_VALUE clVal = CD3DX12_CLEAR_VALUE(dxgiFormat, clColor);
+
+	Texture2DContainer* texbuff = m_textureDB[labelName].get();
+	texbuff->m_subresouceData.pData = nullptr;
+	texbuff->m_subresouceData.SlicePitch = width * height;
+	texbuff->m_subresouceData.RowPitch = height;
+
+	texbuff->texFormat = dxgiFormat;
+	texbuff->fWidth = (float)width;
+	texbuff->fHeight = (float)height;
+
+	const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+
+	hr = pD3D->CreateCommittedResource(
+		&defaultHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&renderTexDesc,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+		&clVal,
+		IID_PPV_ARGS(texbuff->m_pTexture.GetAddressOf())
+	);
+
+	if (FAILED(hr))
+	{
+		ReleaseTexture(labelName);
+	}
+
+	ThrowIfFailed(hr);
+
+	NAME_D3D12_OBJECT(m_textureDB[labelName]->m_pTexture);
+
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.NumDescriptors = 1;
+	rtvHeapDesc.NodeMask = 0;
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	ThrowIfFailed(pD3D->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(texbuff->descHeap.GetAddressOf())));
+
+	//RTV作成
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(texbuff->descHeap->GetCPUDescriptorHandleForHeapStart());
+	pD3D->CreateRenderTargetView(texbuff->m_pTexture.Get(), nullptr, rtvHandle);
+
+	texbuff->rtvDesc.ptr = rtvHandle.ptr;
+
+	return hr;
+}
+//======MultiPath Rendering End
+
 HRESULT TextureManager::UploadCreatedTextures(ID3D12Device* pD3D, ID3D12GraphicsCommandList* pCmdList, ID3D12CommandQueue* pCmdQueue)
 {
 	HRESULT hres = E_FAIL;

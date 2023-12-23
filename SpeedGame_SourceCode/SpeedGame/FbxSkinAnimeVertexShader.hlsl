@@ -8,7 +8,7 @@ struct VS_IN
 	float4 color : COLOR0;
 	float2 uv : TEXTURE0;
 
-	//SkinMesh Unityちゃんは５点以上の影響ボーンがあるクラスタがあるので二つ（最大８）必要
+	//SkinMesh Unityちゃんは5点以上の影響ボーンがあるクラスタがあるので二つ（最大8）必要
 	uint4	indices0 : BLENDINDICES0;
 	uint4	indices1 : BLENDINDICES1;
 	float4	weights0 : BLENDWEIGHT0;
@@ -40,7 +40,7 @@ cbuffer ModelBuffer : register(b2)		// メッシュが持つ自身のマトリクス
 
 cbuffer MeshBone : register(b3)
 {
-	float4x4	bones[2];			//ボーン用配列。データがオーバーすると可変長になるので大丈夫。でも１だと固定長になってしまう。
+	float4x4	bones[2];				//ボーン用配列。データがオーバーすると可変長になるので大丈夫。でも1だと固定長になってしまう
 }
 
 VS_OUT main(VS_IN input)

@@ -41,11 +41,6 @@ private:
     //UnityChanの加速度
     float m_plusSpeed;
 
-    //ゲーム開始前のカウントが終わるまでUnityChanを止めるためのタイマー
-    //タイマー側とカウントを合わせておくこと
-    float timer = 4.0f;
-
-
 public:
     // GameComponent を介して継承されました
     virtual void initAction() override;

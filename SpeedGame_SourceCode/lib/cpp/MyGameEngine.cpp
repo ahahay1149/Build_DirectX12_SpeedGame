@@ -308,6 +308,11 @@ HRESULT MyGameEngine::InitMyGameEngine(HINSTANCE hInst, HWND hwnd)
     m_meshMng = make_unique<MeshManager>();
     m_pipelineMng = make_unique<PipeLineManager>();
 
+    //======G Buffer
+    m_PrePipelineMng = make_unique<PipeLineManager>();
+    m_PEPipelineMng = make_unique<PipeLineManager>();
+    //======G Buffer End
+
     //Comの初期化
     hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     if (FAILED(hr))
@@ -703,10 +708,28 @@ void MyGameEngine::Render()
 
     ThrowIfFailed(m_initCommand->Close());
 
+    //======Pre Draw
+    int preCount = m_PrePipelineMng->Render(true);
+    if (preCount > 0)
+    {
+        m_pCommandQueue->ExecuteCommandLists(preCount, m_PrePipelineMng->GetCommandList());
+        WaitForGpu();
+    }
+    //======Pre Draw End
+
     // 蓄積したコマンドリストをまとめて実行
     int listCount = m_pipelineMng->Render(true);
     if (listCount > 0)
         m_pCommandQueue->ExecuteCommandLists(listCount, m_pipelineMng->GetCommandList());
+
+    //======Post Effect
+    listCount = m_PEPipelineMng->Render();
+    if (listCount > 0)
+    {
+        WaitForGpu();   //GPU処理の効果にエフェクトをかけるので、終了を待つ必要がある
+        m_pCommandQueue->ExecuteCommandLists(listCount, m_PEPipelineMng->GetCommandList());
+    }
+    //======Post Effect End
 
     ThrowIfFailed(m_pSwapChain->Present(1, 0));
 

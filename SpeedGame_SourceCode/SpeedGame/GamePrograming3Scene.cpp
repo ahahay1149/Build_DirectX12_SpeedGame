@@ -9,6 +9,14 @@
 #include "StandardLightingPipeline.h"
 #include "LightSettingManager.h"
 
+//======G Buffer
+#include "GBufferResetCommand.h"
+//======G Buffer End
+
+//======Edge Draw
+#include "EdgeDrawPipeline.h"
+//======Edge Draw End
+
 //Fbx Loadの最適化（一つのメッシュを使い回せるように処理を変更）
 #include "FBXDataContainerSystem.h"
 
@@ -156,15 +164,39 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 		{
 		case static_cast<UINT>(GAME_SCENES::INIT):	//ゲームシステム全体の初期化
 			//テクスチャと効果音の読み込み
-			{
-				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"Sprite00", L"./Resources/textures/texture.png");
+			{				
 				//=====Camera Change Phase 1
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"HUDTexture", L"./Resources/textures/HUD/UITexture.png");
 				//=====Camera Change Phase 1 End
+				
 				//=====Change Scene
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"TitleTexture", L"./Resources/textures/Title/TitleSample.png");
 				//=====Change Scene End
+				
+				//======Toon Shader
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"ToneTexture", L"./Resources/textures/ToonShader/Tone.png");
+				//======Edge Draw
+				engine->GetTextureManager()->CreateRenderTargetTexture
+				(engine->GetDirect3DDevice(), L"NormalBuffer", engine->GetWidth(), engine->GetHeight(), DXGI_FORMAT_R32G32B32A32_FLOAT);
+				//======Edge Draw End
+				//======Toon Shader End
+
 				engine->GetMeshManager()->createPresetMeshData();
+
+				//=========Pre Draw Pipeline
+				PipeLineManager* pPreDrawMng = engine->GetPreDrawPipelineManager();
+
+				//======G Buffer System
+				GBufferResetCommand* gbuffPL = new GBufferResetCommand();
+				pPreDrawMng->AddPipeLineObject(L"GBuffReset", gbuffPL);
+				//======G Buffer System End
+				
+				//======Post Effect PipeLine
+				EdgeDrawPipeline* edgePL = new EdgeDrawPipeline();
+				engine->GetPostEffectPipelineManager()->AddPipeLineObject(L"EdgeDraw", edgePL);
+				//======Post Effect PipeLine End
+				
+				//=========Pre Draw Pipeline End
 
 				//==========PipeLineManager
 				PipeLineManager* plMng = engine->GetPipelineManager();
@@ -187,6 +219,21 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				fbxPL = new StandardLightingPipeline();
 				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::SKELTAL);
 				plMng->AddPipeLineObject(L"AnimationFBX", fbxPL);
+
+				//======Lighting
+				LightSettingManager* lightMng = LightSettingManager::GetInstance();
+				XMFLOAT3 lightColor;
+				XMFLOAT3 lightDirection;
+
+				//Ambient
+				lightColor = { 0.4f, 0.4f, 0.4f };	//1.0でライトの影響値ゼロ
+				lightMng->CreateAmbientLight(L"SCENE_AMBIENT", lightColor);	//登録名はFBXCharacterData参照
+
+				//DirectionalLight
+				lightColor = { 0.8f, 0.8f, 0.8f };			//昼光色的な
+				lightDirection = { -0.57f, -0.57f, 0.57f };	//左斜め下Z奥向き
+				lightMng->CreateDirectionalLight(L"SCENE_DIRECTIONAL", lightColor, lightDirection);	//登録名はFBXCharacterData参照
+				//======Lighting End
 
 				//======Lambert Pipeline
 				fbxPL = new StandardLightingPipeline();
@@ -218,20 +265,15 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				plMng->AddPipeLineObject(L"SkeltalBlinn", fbxPL);
 				//======Blinn Phong Pipeline End
 
-				//======Lighting
-				LightSettingManager* lightMng = LightSettingManager::GetInstance();
-				XMFLOAT3 lightColor;
-				XMFLOAT3 lightDirection;
+				//======Toon Shader
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::Lambert | StandardLightingPipeline::PIPELINE_FLAGS::Toon);
+				plMng->AddPipeLineObject(L"StaticToon", fbxPL);
 
-				//Ambient
-				lightColor = { 0.3f, 0.3f, 0.3f };	//1.0でライトの影響値ゼロ
-				lightMng->CreateAmbientLight(L"SCENE_AMBIENT", lightColor);	//登録名はFBXCharacterData参照
-
-				//DirectionalLight
-				lightColor = { 0.7f, 0.7f, 0.7f };			//昼光色的な
-				lightDirection = { -0.57f, -0.57f, 0.57f };	//左斜め下Z奥向き
-				lightMng->CreateDirectionalLight(L"SCENE_DIRECTIONAL", lightColor, lightDirection);	//登録名はFBXCharacterData参照
-				//======Lighting End
+				fbxPL = new StandardLightingPipeline();
+				fbxPL->SetPipelineFlags(StandardLightingPipeline::PIPELINE_FLAGS::SKELTAL | StandardLightingPipeline::PIPELINE_FLAGS::Lambert | StandardLightingPipeline::PIPELINE_FLAGS::Toon);
+				plMng->AddPipeLineObject(L"SkeltalToon", fbxPL);
+				//======Toon Shader End
 
 				//==========PipeLineManager End
 

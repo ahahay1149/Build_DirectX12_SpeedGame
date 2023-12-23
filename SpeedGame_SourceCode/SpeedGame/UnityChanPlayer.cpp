@@ -20,8 +20,9 @@ void UnityChanPlayer::initAction()
 	//chdata->SetGraphicsPipeLine(L"StaticFBX");		//通常FBX
 	//chdata->SetGraphicsPipeLine(L"AnimationFBX");		//スキンアニメ有りFBX
 	//chdata->SetGraphicsPipeLine(L"SkeltalLambert");	//スキンアニメ有りFBX+Lambert
-	chdata->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
+	//chdata->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
 	//chdata->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
+	chdata->SetGraphicsPipeLine(L"SkeltalToon");		//スキンアニメ有りFBX+Toon
 
 	chdata->SetMainFBX(L"UnityChan");
 
@@ -340,10 +341,8 @@ bool UnityChanPlayer::frameAction()
 		}
 	}
 
-	//最初のカウント時に移動制御の反映が行われないようにする
-	//timerはヘッダ側で何秒待つか指定してる
-	timer -= 0.0166666f;
-	if (timer < 0)
+	//カウントダウン時は移動を行わない
+	if (GameAccessHub::getGameManager()->getStartCount() < 0)
 	{
 		//現在位置更新
 		chData->setPosition(nowPos.x, nowPos.y, nowPos.z);

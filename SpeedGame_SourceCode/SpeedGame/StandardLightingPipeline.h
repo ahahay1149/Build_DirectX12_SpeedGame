@@ -11,6 +11,11 @@ class StandardLightingPipeline :
 private:
     ComPtr<ID3D12DescriptorHeap> m_srvHeap;
 
+    //======Normal Buff
+    ComPtr<ID3D12DescriptorHeap> m_rtvHeap; //RenderTargetView Heap
+    GraphicsPipeLineObjectBase* m_postEffect = nullptr;
+    //======Normal Buff End
+
     UINT32  m_pipelineFlg;
     CBuffFunction m_BoneFunc;
     CBuffFunction m_AmbientFunc;
@@ -19,6 +24,7 @@ private:
     int m_worldMtxIndex;
     int m_textureIndex;
     int m_lightIndex;
+    int m_toneIndex;
 
     void SetTextureToCommandLine(MyGameEngine* engine, TextureManager* pTextureMng, ID3D12GraphicsCommandList* cmdList, int prmIndex, std::wstring texId);
 
@@ -34,6 +40,7 @@ public:
         Lambert =   0x00000002,
         Phong   =   0x00000004,
         Blinn   =   0x00000008,
+        Toon    =   0x0000010C,
 
         LIGHTING_MASK = 0x0000000E,
     };

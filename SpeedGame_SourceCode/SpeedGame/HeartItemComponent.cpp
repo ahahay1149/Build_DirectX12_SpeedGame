@@ -12,8 +12,9 @@ void HeartItemComponent::initAction()
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
 	//chdata->SetGraphicsPipeLine(L"StaticFBX");
 	//chdata->SetGraphicsPipeLine(L"StaticLambert");	//Lambert
-	chdata->SetGraphicsPipeLine(L"StaticPhong");		//Phong
+	//chdata->SetGraphicsPipeLine(L"StaticPhong");		//Phong
 	//chdata->SetGraphicsPipeLine(L"StaticBlinn");		//Blinn Phong
+	chdata->SetGraphicsPipeLine(L"StaticToon");			//Toon
 
 	chdata->setScale(0.01f, 0.01f, 0.01f);	//元モデルがかなり大きい（というかスカイドームとかとあってない）ので縮小
 
