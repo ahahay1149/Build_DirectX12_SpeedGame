@@ -1,6 +1,10 @@
 ﻿#include <windowsx.h>
 #include "MyAppRunner.h"
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 HWND MyAppRunner::m_hWnd = nullptr; //staticメンバの初期化がないとリンクエラー
 bool MyAppRunner::m_fullscreenMode = false;
 RECT MyAppRunner::m_windowRect;
@@ -69,6 +73,8 @@ int MyAppRunner::Run(MyGameEngine* pMyEngine, HINSTANCE hInstance, int nCmdShow)
     }
 }
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT MyAppRunner::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     //WM_CREATEで登録したメモリの取得
@@ -94,6 +100,11 @@ LRESULT MyAppRunner::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
         pEngine->FrameUpdate();
         break;
     case WM_DESTROY:
+        //ImGui Cleanup
+        ImGui_ImplDX12_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+
         PostQuitMessage(0);
         break;
 
@@ -150,5 +161,8 @@ LRESULT MyAppRunner::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
+
+    ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam);
+
     return 0;
 }

@@ -27,6 +27,11 @@
 #pragma comment(lib, "libxml2-md.lib")
 #pragma comment(lib, "zlib-md.lib")
 
+//ImGui
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 using namespace DirectX;
 
 HRESULT MyGameEngine::InitMyGameEngine(HINSTANCE hInst, HWND hwnd)
@@ -273,6 +278,9 @@ HRESULT MyGameEngine::InitMyGameEngine(HINSTANCE hInst, HWND hwnd)
     {
         ThrowIfFailed(m_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[i].Get(), nullptr, IID_PPV_ARGS(m_initCommand.GetAddressOf())));
         ThrowIfFailed(m_initCommand->Close());
+
+        ThrowIfFailed(m_pd3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[i].Get(), nullptr, IID_PPV_ARGS(m_imguiCommand.GetAddressOf())));
+        ThrowIfFailed(m_imguiCommand->Close());
     }
 
     //リソースバリアのFenceを作成
@@ -357,6 +365,29 @@ HRESULT MyGameEngine::InitMyGameEngine(HINSTANCE hInst, HWND hwnd)
         DWORD r = GetLastError();
         return hr;
     }
+
+    //======ImGui Setup
+    m_HeapForImgui = CreateDescriptorHeapForImgui();
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;   // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;    // Enable Gamepad Controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking
+    //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Over MainWindow
+
+    // Setup ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplWin32_Init(hwnd);
+    ImGui_ImplDX12_Init(m_pd3dDevice.Get(), FRAME_COUNT,
+        DXGI_FORMAT_R8G8B8A8_UNORM, m_HeapForImgui.Get(),
+        m_HeapForImgui->GetCPUDescriptorHandleForHeapStart(),
+        m_HeapForImgui->GetGPUDescriptorHandleForHeapStart());
+    //======ImGui Setup End
 
     return S_OK;
 }
@@ -448,6 +479,12 @@ void MyGameEngine::FrameUpdate()
 
         //ヒットバッファフラッシュ
         m_hitMng->refreshHitSystem();
+
+        //======ImGui NewFrame
+        ImGui_ImplDX12_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+        //======ImGui NewFrame End
 
         std::for_each(m_gameObjects.begin(), m_gameObjects.end(),   //gameObjectsの中身全てで
             [this, &deleteObjects](GameObject* obj) {
@@ -731,6 +768,35 @@ void MyGameEngine::Render()
     }
     //======Post Effect End
 
+    //ImGui Render
+    ThrowIfFailed(m_imguiCommand->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+    tra = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+    m_imguiCommand->ResourceBarrier(1, &tra);
+
+    m_imguiCommand->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+
+    ImGui::Render();
+    m_imguiCommand->SetDescriptorHeaps(1, m_HeapForImgui.GetAddressOf());
+    ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_imguiCommand.Get());
+
+    //ImGui Over MainWindow
+    //if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    //{
+    //    ImGui::UpdatePlatformWindows();
+    //    ImGui::RenderPlatformWindowsDefault();
+    //}
+
+    tra = CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    m_imguiCommand->ResourceBarrier(1, &tra);
+
+    ThrowIfFailed(m_imguiCommand->Close());
+
+    //Imguiコマンドリストを実行
+    ID3D12CommandList* cl[] = { m_imguiCommand.Get() };
+    m_pCommandQueue->ExecuteCommandLists(1, cl);
+    //ImGui Render End
+
     ThrowIfFailed(m_pSwapChain->Present(1, 0));
 
 }
@@ -741,3 +807,20 @@ MyGameEngine::MyGameEngine(UINT width, UINT height, std::wstring title)
     m_windowWidth = width;
     m_windowHeight = height;
 }
+
+//======ImGui Setup
+ComPtr<ID3D12DescriptorHeap> MyGameEngine::CreateDescriptorHeapForImgui()
+{
+    ComPtr<ID3D12DescriptorHeap> ret;
+
+    D3D12_DESCRIPTOR_HEAP_DESC desc = {};
+    desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+    desc.NodeMask = 0;
+    desc.NumDescriptors = 1;
+    desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+
+    m_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(ret.ReleaseAndGetAddressOf()));
+
+    return ret;
+}
+//======ImGui Setup End

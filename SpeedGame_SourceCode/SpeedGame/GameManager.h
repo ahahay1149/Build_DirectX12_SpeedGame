@@ -25,9 +25,15 @@ private:
     UINT m_scene;   //現在のシーン
     //========
 
+    //ImGui
+    bool check = false;
+
 private:
     void ChangeSceneInit(UINT scene);
     void countTimer();
+
+    //ImGui
+    void imgui();
 
 public:
     // GameComponent を介して継承されました

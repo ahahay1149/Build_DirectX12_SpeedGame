@@ -5,6 +5,11 @@
 #include "GamePrograming3Scene.h"
 #include "GamePrograming3Enum.h"
 
+//ImGui
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 void GameManager::initAction()
 {
 
@@ -40,6 +45,9 @@ bool GameManager::frameAction()
 		}
 		break;
 	}
+
+	//ImGui
+	imgui();
 
 	return true;
 }
@@ -109,4 +117,21 @@ void GameManager::sendScene(UINT scene)
 
 	m_scene = scene;
 	ChangeSceneInit(scene);
+}
+
+void GameManager::imgui()
+{
+	ImGui::Begin("Window");
+	ImGui::Checkbox("GameManager", &check);
+	ImGui::End();
+
+	if (check == true)
+	{
+		ImGui::Begin("GameManager");
+		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
+		
+
+		
+		ImGui::End();
+	}
 }

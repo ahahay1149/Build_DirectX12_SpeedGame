@@ -11,6 +11,11 @@
 
 #include "GamePrograming3UIRender.h"
 
+//ImGui
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 #define MOVE_3D (0)				//(0)にすると2Dモード
 
 void UnityChanPlayer::initAction()
@@ -365,6 +370,23 @@ bool UnityChanPlayer::frameAction()
 	//判定セット
 	MyAccessHub::getMyGameEngine()->GetHitManager()->setHitArea(this, &bodyColl);
 
+	//UnityChanPlayer ImGui
+	imgui();
+
+	switch (selectShader)
+	{
+	case 0:
+		chData->SetGraphicsPipeLine(L"SkeltalLambert");		//スキンアニメ有りFBX+Lambert
+		break;
+	case 1:
+		chData->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
+		break;
+	case 2:
+		chData->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
+		break;
+
+	}
+
 	return true;
 }
 
@@ -382,4 +404,21 @@ void UnityChanPlayer::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 
 	//取得数を増やしたことをGameManagerに伝える
 	GameAccessHub::getGameManager()->plusHeartItemCount();
+}
+
+void UnityChanPlayer::imgui()
+{
+	ImGui::Begin("Window");
+	ImGui::Checkbox("UnityChanPlayer", &check);
+	ImGui::End();
+
+	if (check == true)
+	{
+		ImGui::Begin("UnityChanPlayer");
+		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
+
+		ImGui::Combo("Shader", &selectShader, items, IM_ARRAYSIZE(items));
+
+		ImGui::End();
+	}
 }

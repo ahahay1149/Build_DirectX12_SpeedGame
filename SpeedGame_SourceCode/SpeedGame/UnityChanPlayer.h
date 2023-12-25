@@ -41,6 +41,13 @@ private:
     //UnityChanの加速度
     float m_plusSpeed;
 
+    //ImGui
+    bool check = false;
+    int selectShader = -1;
+    const char* items[3] = { "Lambert","Phong","Blinn Phong" };
+
+    void imgui();
+
 public:
     // GameComponent を介して継承されました
     virtual void initAction() override;

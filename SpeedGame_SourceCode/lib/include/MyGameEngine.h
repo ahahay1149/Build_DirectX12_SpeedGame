@@ -117,6 +117,12 @@ private:
     //利用中カメラオブジェクト
     CharacterData* m_cameraData;
 
+    //ImGui
+    ComPtr<ID3D12GraphicsCommandList>   m_imguiCommand; //ImGui描画命令用コマンドリスト
+
+    ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeapForImgui();
+    ComPtr<ID3D12DescriptorHeap> m_HeapForImgui;	//ヒープ保持用(返り値の受け皿)
+
     //描画
     void Render();
 
