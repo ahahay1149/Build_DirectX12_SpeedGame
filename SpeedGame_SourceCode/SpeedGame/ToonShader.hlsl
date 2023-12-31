@@ -34,9 +34,21 @@ TONE_OUT main(VS_OUT input)
 
 	float p;
 
-	p = dot(input.wnml.xyz, -dLightVector.xyz);
-	p = p * 0.5f + 0.5;	//HalfLambert公式
-	p = p * p;
+	//======Depth Shadow
+	float4 shadowColor = GetShadowColor(input.lightPos, ShadowMapTex, ShadowSampler);			//深度バッファシャドウ計算
+	tex_color *= shadowColor;	//テクスチャ自体の色に補正値
+
+	if (shadowColor.x < 1.0f)
+	{
+		p = 0.2f;	//最も暗くする
+	}
+	else
+	{
+		p = dot(input.wnml.xyz, -dLightVector.xyz);
+		p = p * 0.5f + 0.5;		//HalfLambert公式
+		p = p * p;
+	}
+	//======Depth Shadow End
 
 	float4 toneCL = ToneTex.Sample(Sampler, float2(p, 0.0f));
 	res.outColor.xyz = tex_color.xyz * toneCL.xyz;

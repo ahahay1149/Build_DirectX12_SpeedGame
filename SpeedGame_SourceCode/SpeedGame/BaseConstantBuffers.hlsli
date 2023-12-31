@@ -12,6 +12,10 @@ struct VS_OUT
     float4 wtan : TANGENT0;     //ワールド座標系での法線に対するtangentベクトル
     float4 wbnml : NORMAL1;     //B1Normal
     //======Normal Map End
+
+    //======Depth Shadow
+    float4 lightPos : POSITION1;
+    //======Depth Shadow End
     
     float4 color : COLOR0;
     float2 uv : TEXCOORD0;
@@ -37,3 +41,10 @@ cbuffer DirectionalLight : register(b3)
     float3 dLightColor;     //色
     float3 dLightVector;    //向き
 }
+
+//======Depth Shadow
+cbuffer cbShadowMap : register(b7)
+{
+    float4x4 lightViewProjection;
+}
+//======Depth Shadow End

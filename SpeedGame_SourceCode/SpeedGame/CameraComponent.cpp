@@ -6,6 +6,15 @@
 #include "GamePrograming3Scene.h"
 //======CameraChange Phase 1 End
 
+//======Depth Shadow
+#include "LightSettingManager.h"
+//======Depth Shadow End
+
+//ImGui
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+
 void CameraComponent::initAction()
 {
 	m_normal.x = 0.0f;
@@ -54,7 +63,20 @@ bool CameraComponent::frameAction()
 		m_direction.x = XMVectorGetX(camdir);
 		m_direction.y = XMVectorGetY(camdir);
 		m_direction.z = XMVectorGetZ(camdir);
+
+		//======Specular
+		engine->UpdateShaderResourceOnGPU(chData->GetConstantBuffer(2), &Eye, sizeof(XMVECTOR));
+		//======Specular End
+
+		//======Depth Shadow
+		GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(engine->GetSceneController());
+		auto dLight = LightSettingManager::GetInstance()->GetDirectionalLight(L"SCENE_DIRECTIONAL");
+		dLight->UpdateLightBaseMatrix(pos, m_focus);
+		//======Depth Shadow End
 	}
+
+	imgui();
+
 	return true;
 }
 
@@ -110,4 +132,19 @@ void CameraComponent::changeCameraFOVRadian(float fovRad)
 {
 	m_fov = fovRad;
 	updateFlg = true;
+}
+
+void CameraComponent::imgui()
+{
+	ImGui::Begin("Window");
+	ImGui::Checkbox("CameraComponent", &check);
+	ImGui::End();
+
+	if (check == true)
+	{
+		ImGui::Begin("CameraComponent");
+		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
+
+		ImGui::End();
+	}
 }

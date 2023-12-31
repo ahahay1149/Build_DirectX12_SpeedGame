@@ -36,3 +36,27 @@ float4 GetNormalVect(float3 baseNormal, float3 baseTangent, float3 binormal, flo
     return normal;
 }
 //======Normal Map End
+
+//======Depth Shadow & Shadow Bler
+float4 GetShadowColor(float4 pos, Texture2D lightDepth, SamplerComparisonState samp)
+{
+    float4 color = { 1,1,1,1 };
+
+    float3 screenPos = pos.xyz / pos.w;     //スクリーン座標 = プロジェクション座標 / w
+    float2 uv = (screenPos.xy + float2(1, -1)) * float2(0.5, -0.5);
+
+    if (uv.x < 0.0f || uv.y < 0.0f || uv.x > 1.0f || uv.y > 1.0f)   //UVが0.0 - 1.0におさまっているかチェック
+        return color;
+
+    float4 depth = lightDepth.SampleCmp(samp, uv, screenPos.z - 0.001); //0.001でシャドウアクネ対策
+    float shadowWeight = lerp(0.5, 1.0, depth);                         //影補正値が0.5より小さいと黒すぎるので0.5に強制
+
+    if (depth.r < screenPos.z)
+    {
+        //何かに光がさえぎられている
+        color.xyz = shadowWeight;
+    }
+
+    return color;
+}
+//======Depth Shadow & Shadow Bler End

@@ -16,6 +16,11 @@ private:
 
 	void initAction() override;			//コンポーネント初期化時に呼ばれる処理
 
+	//ImGui
+	bool check = false;
+
+	void imgui();
+
 public:
 	bool frameAction() override;		//毎フレーム呼ばれる処理　falseを返すとこのコンポーネントは終了し削除される
 	void finishAction() override;		//終了時に呼ばれる処理

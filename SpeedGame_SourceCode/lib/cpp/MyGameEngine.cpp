@@ -221,7 +221,8 @@ HRESULT MyGameEngine::InitMyGameEngine(HINSTANCE hInst, HWND hwnd)
     //Depth Stencil
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};    //rtvやsrvと同じような感じ
 
-    dsvHeapDesc.NumDescriptors = 1;  //DepthはSwapChainがPresentする時に安全に上書きされるとのこと
+    dsvHeapDesc.NumDescriptors = 2; //DepthはSwapChainがPresentする時に安全に上書きされるとのこと
+                                    //Light Depthを追加
 
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -257,6 +258,35 @@ HRESULT MyGameEngine::InitMyGameEngine(HINSTANCE hInst, HWND hwnd)
 
     m_pd3dDevice->CreateDepthStencilView(m_pDepthStencil.Get(), &depthStencilDesc, dsvHandle);
 
+    //======Depth Shadow
+    depthOptimizedClearValue = {};
+    depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
+    depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
+    depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+    dsvHandle.ptr += m_pd3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+    const CD3DX12_RESOURCE_DESC lightDepthTextureDesc = CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_R32_TYPELESS,
+        m_cLightDepthTextureSize.x, m_cLightDepthTextureSize.y, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+
+    ThrowIfFailed(m_pd3dDevice->CreateCommittedResource(
+        &depthStencilHeapProps,
+        D3D12_HEAP_FLAG_NONE,
+        &lightDepthTextureDesc,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+        &depthOptimizedClearValue,
+        IID_PPV_ARGS(m_pLightDepth.GetAddressOf())
+    ));
+
+    NAME_D3D12_OBJECT(m_pLightDepth); //Debugでエラー表示する時に名前が出るように。
+
+    D3D12_DEPTH_STENCIL_VIEW_DESC lightDepthDesc = {};
+    lightDepthDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    lightDepthDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+    lightDepthDesc.Flags = D3D12_DSV_FLAG_NONE;
+
+    m_pd3dDevice->CreateDepthStencilView(m_pLightDepth.Get(), &lightDepthDesc, dsvHandle);
+    //======Depth Shadow End
 
     //Viewport
     m_viewport.Width = (FLOAT)width;

@@ -6,8 +6,9 @@
 #include "TerrainComponent.h"
 //=====動く地形 対応 END
 
-
 #include <HitShapes.h>
+
+#include "FBXCharacterData.h"
 
 class UnityChanPlayer :
     public GameComponent
@@ -44,9 +45,9 @@ private:
     //ImGui
     bool check = false;
     int selectShader = -1;
-    const char* items[3] = { "Lambert","Phong","Blinn Phong" };
+    const char* items[4] = { "Lambert","Phong","Blinn Phong", "Toon"};
 
-    void imgui();
+    void imgui(FBXCharacterData* chData);
 
 public:
     // GameComponent を介して継承されました

@@ -13,6 +13,11 @@ DirectionalLightContainer::DirectionalLightContainer()
 
     myEngine->CreateConstantBuffer(m_cBuff.GetAddressOf(), &m_lightData,
         sizeof(DirectionalLightContainer::DirectionalLightData));       //シェーダリソース作成
+
+    //======Depth Shadow
+    m_lightViewMtx = {};
+    myEngine->CreateConstantBuffer(m_lightMtxBuff.GetAddressOf(), &m_lightViewMtx, sizeof(XMMATRIX));
+    //======Depth Shadow End
 }
 
 void DirectionalLightContainer::SetDirectionalLight(XMFLOAT3 color, XMFLOAT3 direction)
@@ -35,20 +40,42 @@ ID3D12Resource* DirectionalLightContainer::GetConstantBuffer()
     return m_cBuff.Get();   //シェーダリソース取得
 }
 
+//======Depth Shadow
+void DirectionalLightContainer::UpdateLightBaseMatrix(XMFLOAT3& eyePos, XMFLOAT3& focusPos)
+{
+    XMVECTOR camPosVect = XMLoadFloat3(&eyePos);        //カメラ位置
+    XMVECTOR focusPosVect = XMLoadFloat3(&focusPos);    //フォーカスする(カメラが向く)位置
+    XMVECTOR lightDir = m_lightData.Direction;
+
+    //フォーカス位置から光の方向の逆に現在のカメラ距離の20倍移動した位置を光源位置としている
+    XMVECTOR lightPos = focusPosVect - XMVector3Normalize(lightDir) * XMVector3Length(XMVectorSubtract(focusPosVect, camPosVect)).m128_f32[0] * 20.0f;
+
+    //CameraComponentと同じ処理
+    XMVECTOR Up = XMVectorSet(0, 1, 0, 0.0f);   //カメラの上方向単位ベクトル（カメラのロール軸）
+    m_lightViewMtx = XMMatrixLookAtLH(lightPos, focusPosVect, Up);  //View行列作成
+    XMMATRIX trMat = XMMatrixTranspose(m_lightViewMtx);
+
+    auto myEngine = MyAccessHub::getMyGameEngine();
+    myEngine->UpdateShaderResourceOnGPU(m_lightMtxBuff.Get(), &trMat, sizeof(XMMATRIX));    //シェーダリソース更新
+}
+
+XMMATRIX DirectionalLightContainer::GetLightViewMtx()
+{
+    return m_lightViewMtx;
+}
+
+ID3D12Resource* DirectionalLightContainer::GetLightBaseMtxBuffer()
+{
+    return m_lightMtxBuff.Get();
+}
+//======Depth Shadow End
+
 void DirectionalLightContainer::UpdateCBuffer()
 {
     auto myEngine = MyAccessHub::getMyGameEngine();
 
     myEngine->UpdateShaderResourceOnGPU(m_cBuff.Get(), &m_lightData,
         sizeof(DirectionalLightContainer::DirectionalLightData));  //更新処理
-}
-
-DirectionalLightContainer* LightSettingManager::GetDirectionalLight(std::wstring label)
-{
-    if (m_DirectionalLights.find(label) == m_DirectionalLights.end())
-        return nullptr; //名前のデータがない場合はnullptrを返す
-    
-    return m_DirectionalLights[label].get();
 }
 
 //===DirectionalLightContainer End===
@@ -79,14 +106,6 @@ void AmbientLightContainer::SetLight(float r, float g, float b)
 void AmbientLightContainer::SetLight(XMFLOAT3 color)
 {
     SetLight(color.x, color.y, color.z);    //float引数のメソッドを呼んでいるだけ
-}
-
-AmbientLightContainer* LightSettingManager::GetAmbientLight(std::wstring label)
-{
-    if(m_AmbientLights.find(label) == m_AmbientLights.end())
-        return nullptr; //名前のデータがない場合はnullptrを返す
-
-    return m_AmbientLights[label].get();
 }
 
 //===AmbientLightContainer End===
@@ -132,6 +151,23 @@ void LightSettingManager::CreateDirectionalLight(std::wstring label, XMFLOAT3 li
 
     m_DirectionalLights[label] = std::move(dirLight);
 }
+
+AmbientLightContainer* LightSettingManager::GetAmbientLight(std::wstring label)
+{
+    if (m_AmbientLights.find(label) == m_AmbientLights.end())
+        return nullptr; //名前のデータがない場合はnullptrを返す
+
+    return m_AmbientLights[label].get();
+}
+
+DirectionalLightContainer* LightSettingManager::GetDirectionalLight(std::wstring label)
+{
+    if (m_DirectionalLights.find(label) == m_DirectionalLights.end())
+        return nullptr; //名前のデータがない場合はnullptrを返す
+
+    return m_DirectionalLights[label].get();
+}
+
 
 void LightSettingManager::DeleteAmbientLight(std::wstring label)
 {

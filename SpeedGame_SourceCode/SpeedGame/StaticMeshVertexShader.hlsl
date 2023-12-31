@@ -41,9 +41,14 @@ VS_OUT main(VS_IN input)
     output.wtan = tangent; //PSに渡す値
     output.wbnml = float4(normalize(cross(normal.xyz, tangent.xyz)), 0.0f);
     //======Normal Map End
+
+    //======Depth Shadow
+    // ライトから見たプロジェクション座標を保存
+    output.lightPos = mul(output.wpos, lightViewProjection);
+    //======Depth Shadow End
     
-    //本体処理呼び出し
-    output.color = MakeDiffuseColor(normal, input.color, dLightColor, dLightVector);
+    //PixelShaderで処理するのでそのまま渡す
+    output.color = input.color;
     
     //Texture座標指定
     output.uv = input.uv;

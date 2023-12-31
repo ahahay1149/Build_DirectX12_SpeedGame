@@ -22,12 +22,12 @@ void UnityChanPlayer::initAction()
 {
 	//FBXCharacterDataは基底クラスのGameObjectにセットする
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
-	//chdata->SetGraphicsPipeLine(L"StaticFBX");		//通常FBX
-	//chdata->SetGraphicsPipeLine(L"AnimationFBX");		//スキンアニメ有りFBX
-	//chdata->SetGraphicsPipeLine(L"SkeltalLambert");	//スキンアニメ有りFBX+Lambert
-	//chdata->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
-	//chdata->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
-	chdata->SetGraphicsPipeLine(L"SkeltalToon");		//スキンアニメ有りFBX+Toon
+	//chdata->SetGraphicsPipeLine(L"StaticFBX");			//通常FBX
+	//chdata->SetGraphicsPipeLine(L"AnimationFBX");			//スキンアニメ有りFBX
+	//chdata->SetGraphicsPipeLine(L"SkeltalLambert");		//スキンアニメ有りFBX+Lambert
+	//chdata->SetGraphicsPipeLine(L"SkeltalPhong");			//スキンアニメ有りFBX+Phong
+	//chdata->SetGraphicsPipeLine(L"SkeltalBlinn");			//スキンアニメ有りFBX+BlinnPhong
+	chdata->SetGraphicsPipeLine(L"SkeltalToon");			//スキンアニメ有りFBX+Toon
 
 	chdata->SetMainFBX(L"UnityChan");
 
@@ -371,21 +371,7 @@ bool UnityChanPlayer::frameAction()
 	MyAccessHub::getMyGameEngine()->GetHitManager()->setHitArea(this, &bodyColl);
 
 	//UnityChanPlayer ImGui
-	imgui();
-
-	switch (selectShader)
-	{
-	case 0:
-		chData->SetGraphicsPipeLine(L"SkeltalLambert");		//スキンアニメ有りFBX+Lambert
-		break;
-	case 1:
-		chData->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
-		break;
-	case 2:
-		chData->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
-		break;
-
-	}
+	imgui(chData);
 
 	return true;
 }
@@ -406,7 +392,7 @@ void UnityChanPlayer::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 	GameAccessHub::getGameManager()->plusHeartItemCount();
 }
 
-void UnityChanPlayer::imgui()
+void UnityChanPlayer::imgui(FBXCharacterData* chData)
 {
 	ImGui::Begin("Window");
 	ImGui::Checkbox("UnityChanPlayer", &check);
@@ -420,5 +406,23 @@ void UnityChanPlayer::imgui()
 		ImGui::Combo("Shader", &selectShader, items, IM_ARRAYSIZE(items));
 
 		ImGui::End();
+	}
+
+	//===imgui処理変更処理部分
+
+	switch (selectShader)
+	{
+	case 0:
+		chData->SetGraphicsPipeLine(L"SkeltalLambert");		//スキンアニメ有りFBX+Lambert
+		break;
+	case 1:
+		chData->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
+		break;
+	case 2:
+		chData->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
+		break;
+	case 3:
+		chData->SetGraphicsPipeLine(L"SkeltalToon");		//スキンアニメ有りFBX+Toon
+		break;
 	}
 }

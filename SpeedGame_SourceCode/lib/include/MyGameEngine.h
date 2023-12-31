@@ -67,6 +67,14 @@ private:
 
     ComPtr<ID3D12Resource> m_pDepthStencil = nullptr;
 
+    //======Depth Shadow
+    // シャドウマップテクスチャの解像度
+    const XMINT2 m_cLightDepthTextureSize = { 1024,1024 };
+
+    //深度シャドウ用 光源から見たDepth
+    ComPtr<ID3D12Resource> m_pLightDepth = nullptr;
+    //======Depth Shadow End
+
     std::wstring    m_title;
     UINT            m_windowWidth;
     UINT            m_windowHeight;
@@ -233,6 +241,18 @@ public:
     {
         return m_pDepthStencil.Get();
     }
+
+    //======Depth Shadow
+    ID3D12Resource* GetLightDepth()
+    {
+        return m_pLightDepth.Get();
+    }
+
+    XMINT2 GetLightDepthTextureSize()
+    {
+        return m_cLightDepthTextureSize;
+    }
+    //======Depth Shadow End
 
     UINT GetRTVDescSize()
     {

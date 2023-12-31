@@ -17,6 +17,10 @@
 #include "EdgeDrawPipeline.h"
 //======Edge Draw End
 
+//======Depth Shadow(Pre Pipeline)
+#include "ShadowMapPipeline.h" 
+//======Depth Shadow(Pre Pipeline) End
+
 //Fbx Loadの最適化（一つのメッシュを使い回せるように処理を変更）
 #include "FBXDataContainerSystem.h"
 
@@ -195,6 +199,16 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				EdgeDrawPipeline* edgePL = new EdgeDrawPipeline();
 				engine->GetPostEffectPipelineManager()->AddPipeLineObject(L"EdgeDraw", edgePL);
 				//======Post Effect PipeLine End
+
+				//======Shadow Map Pipeline
+				ShadowMapPipeline* pShadowMap = new ShadowMapPipeline();
+				pShadowMap->SetStaticMeshMode(true);
+				pPreDrawMng->AddPipeLineObject(L"StaticShadowMap", pShadowMap);
+
+				pShadowMap = new ShadowMapPipeline();
+				pShadowMap->SetStaticMeshMode(false);
+				pPreDrawMng->AddPipeLineObject(L"SkeltalShadowMap", pShadowMap);
+				//======Shadow Map Pipeline End
 				
 				//=========Pre Draw Pipeline End
 
@@ -230,7 +244,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				lightMng->CreateAmbientLight(L"SCENE_AMBIENT", lightColor);	//登録名はFBXCharacterData参照
 
 				//DirectionalLight
-				lightColor = { 0.8f, 0.8f, 0.8f };			//昼光色的な
+				lightColor = { 0.5f, 0.5f, 0.5f };			//昼光色的な
 				lightDirection = { -0.57f, -0.57f, 0.57f };	//左斜め下Z奥向き
 				lightMng->CreateDirectionalLight(L"SCENE_DIRECTIONAL", lightColor, lightDirection);	//登録名はFBXCharacterData参照
 				//======Lighting End

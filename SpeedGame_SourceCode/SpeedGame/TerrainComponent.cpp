@@ -8,10 +8,10 @@ void TerrainComponent::initAction()
 {
 	FBXCharacterData* fbxChara = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
 	//fbxChara->SetGraphicsPipeLine(L"StaticFBX");
-	//fbxChara->SetGraphicsPipeLine(L"StaticLambert");	//Lambert
-	//chdata->SetGraphicsPipeLine(L"StaticPhong");		//Phong
-	//chdata->SetGraphicsPipeLine(L"StaticBlinn");		//Blinn Phong
-	fbxChara->SetGraphicsPipeLine(L"StaticToon");		//Toon
+	//fbxChara->SetGraphicsPipeLine(L"StaticLambert");		//Lambert
+	//chdata->SetGraphicsPipeLine(L"StaticPhong");			//Phong
+	//chdata->SetGraphicsPipeLine(L"StaticBlinn");			//Blinn Phong
+	fbxChara->SetGraphicsPipeLine(L"StaticToon");			//Toon
 
 
 	//TerrainHit01

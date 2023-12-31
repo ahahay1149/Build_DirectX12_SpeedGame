@@ -35,3 +35,10 @@ cbuffer cbMaterialInfo : register(b6)
     uint TextureFlag;
 }
 //======Specular + Normal End
+
+//======Depth Shadow
+Texture2D ShadowMapTex : register(t4, space0);  //ShadowMapTextureをスロット0の4番目に設定
+//Shadow Bler
+SamplerComparisonState ShadowSampler : register(s1, space0);    //ComparisonSamplerをスロット0の1番目のサンプラレジスタに設定
+//Shadow Bler End
+//======Depth Shadow End

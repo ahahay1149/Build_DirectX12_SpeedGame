@@ -2,6 +2,10 @@
 #include "PipeLineManager.h"
 #include "FBXCharacterData.h"
 
+//======Depth Shadow
+#include "ShadowMapPipeline.h"
+//======Depth Shadow End
+
 //関数ポインタ型の定義を使って処理を分岐
 typedef int (*CBuffFunction)(int parameterIndex, std::wstring& currentLabel, MyGameEngine* engine, ID3D12GraphicsCommandList* cmdList, FBXCharacterData* fbxChara);
 
@@ -16,6 +20,11 @@ private:
     GraphicsPipeLineObjectBase* m_postEffect = nullptr;
     //======Normal Buff End
 
+    //======Depth Shadow
+    ShadowMapPipeline* m_shadowMapPL = nullptr;
+    //======Depth Shadow End
+
+
     UINT32  m_pipelineFlg;
     CBuffFunction m_BoneFunc;
     CBuffFunction m_AmbientFunc;
@@ -25,6 +34,11 @@ private:
     int m_textureIndex;
     int m_lightIndex;
     int m_toneIndex;
+
+    //======Depth Shadow
+    int m_shadowDepthIndex;
+    ComPtr<ID3D12Resource> m_cbLightViewProjection;
+    //======Depth Shadow End
 
     void SetTextureToCommandLine(MyGameEngine* engine, TextureManager* pTextureMng, ID3D12GraphicsCommandList* cmdList, int prmIndex, std::wstring texId);
 

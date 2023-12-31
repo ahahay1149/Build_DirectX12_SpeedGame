@@ -56,6 +56,19 @@ ID3D12GraphicsCommandList* GBufferResetCommand::ExecuteRender()
     cmdList->ResourceBarrier(1, tra);  //セット。第一引数は設定の数
     //================Normal Buffer End=============
 
+    //======Depth Shadow
+    // シャドウマップのDSV取得
+    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(myEngine->GetDSVHeap()->GetCPUDescriptorHandleForHeapStart());
+    dsvHandle.ptr += myEngine->GetDirect3DDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+    D3D12_RECT scissor;
+    scissor.left = 0;
+    scissor.top = 0;
+    scissor.right = myEngine->GetLightDepthTextureSize().x;
+    scissor.bottom = myEngine->GetLightDepthTextureSize().y;
+    cmdList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 1, &scissor);
+    //======Depth Shadow End
+
     cmdList->Close();
 
     return cmdList;

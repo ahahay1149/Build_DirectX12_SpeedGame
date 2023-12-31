@@ -128,8 +128,8 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
 
     // テクスチャ用RANGEの作成
 
-    CD3DX12_DESCRIPTOR_RANGE1 ranges[4];
-    ZeroMemory(ranges, sizeof(CD3DX12_DESCRIPTOR_RANGE1) * 4);
+    CD3DX12_DESCRIPTOR_RANGE1 ranges[5];
+    ZeroMemory(ranges, sizeof(CD3DX12_DESCRIPTOR_RANGE1) * 5);
 
     ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //Texture
 
@@ -140,32 +140,52 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     //======Toon Shader
     ranges[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 3, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC); //ColorTone Texture
     //======Toon Shader End
+    //======Depth Shadow
+    ranges[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 4, 0, D3D12_DESCRIPTOR_RANGE_FLAG_NONE);         //Shadow Map Texture
+    //======Depth Shadow End
 
     //SamplerStateの設定
-    D3D12_STATIC_SAMPLER_DESC sampler = {};
-    sampler.Filter = D3D12_FILTER_ANISOTROPIC; //D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-    sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-    sampler.MipLODBias = 0;
-    sampler.MaxAnisotropy = 4;
-    sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-    sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-    sampler.MinLOD = 0.0f;
-    sampler.MaxLOD = D3D12_FLOAT32_MAX;
-    sampler.ShaderRegister = 0;
-    sampler.RegisterSpace = 0;
-    sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    D3D12_STATIC_SAMPLER_DESC sampler[2] = {};
+
+    //Shadow Bler
+    sampler[0].Filter = D3D12_FILTER_ANISOTROPIC;
+    sampler[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    sampler[0].MipLODBias = 0;
+    sampler[0].MaxAnisotropy = 4;
+    sampler[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+    sampler[0].BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+    sampler[0].MinLOD = 0.0f;
+    sampler[0].MaxLOD = D3D12_FLOAT32_MAX;
+    sampler[0].ShaderRegister = 0;
+    sampler[0].RegisterSpace = 0;
+    sampler[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+    sampler[1].Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR; //比較+線形補完フィルタ
+    sampler[1].AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+    sampler[1].AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+    sampler[1].AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+    sampler[1].MipLODBias = 0;
+    sampler[1].MaxAnisotropy = 1;
+    sampler[1].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    sampler[1].BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+    sampler[1].MinLOD = 0.0f;
+    sampler[1].MaxLOD = D3D12_FLOAT32_MAX;
+    sampler[1].ShaderRegister = 1;  //S1で登録するので1
+    sampler[1].RegisterSpace = 0;
+    sampler[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    //Shadow Bler End
 
     //RootSignature設定本体
     CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
 
-    CD3DX12_ROOT_PARAMETER1 rootParameters[12];  //基本MVPマトリクス 3 テクスチャ 4 + マテリアル設定 1 + ボーン 1 + 環境光 1 + 平行光源 1 + カメラ光源 1
-    ZeroMemory(rootParameters, sizeof(CD3DX12_ROOT_PARAMETER1) * 12);
+    CD3DX12_ROOT_PARAMETER1 rootParameters[14];  //基本MVPマトリクス 3 テクスチャ 5 + マテリアル設定 1 + ボーン 1 + 環境光 1 + ライトVP 1 + 平行光源 1 + カメラ光源 1
+    ZeroMemory(rootParameters, sizeof(CD3DX12_ROOT_PARAMETER1) * 14);
 
     //増える可能性あるので変数化
     int paramIndex = 0;
-    m_textureIndex = m_worldMtxIndex = m_lightIndex = m_toneIndex = -1;
+    m_textureIndex = m_worldMtxIndex = m_lightIndex = m_toneIndex = m_shadowDepthIndex -1;
 
     int texCount = 0;  //テクスチャSRVを保存するGPU内インデックス番号
 
@@ -207,13 +227,21 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
         D3D12_SHADER_VISIBILITY_PIXEL); //環境光 ボーンとレジスタ被らせてる
 	// 04: ここまで
 
+    //======Depth Shadow
+    m_shadowDepthIndex = paramIndex;
+    rootParameters[paramIndex++].InitAsDescriptorTable(1, &ranges[4], D3D12_SHADER_VISIBILITY_ALL); //ShadowMapTexture
+    texCount++;
+
+    rootParameters[paramIndex++].InitAsConstantBufferView(7, 0, D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC, D3D12_SHADER_VISIBILITY_ALL);   //ライトVP
+    //======Depth Shadow End
+
     //======Toon Shader
     m_toneIndex = paramIndex;
     rootParameters[paramIndex++].InitAsDescriptorTable(1, &ranges[3], D3D12_SHADER_VISIBILITY_PIXEL);
     texCount++;
     //======Toon Shader End
 
-    rootSignatureDesc.Init_1_1(paramIndex, rootParameters, 1, &sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+    rootSignatureDesc.Init_1_1(paramIndex, rootParameters, 2, sampler, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
  
     // RootSignatureの作成
     // RootSignatureDescへ設定パラメータを統合して設定バイナリを作成
@@ -223,6 +251,22 @@ HRESULT StandardLightingPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
 
     // 結合して出来たバイナリでID3D12RootSignatureを作成
     ThrowIfFailed(d3dDev->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(m_rootSignature.GetAddressOf())));
+
+    //======Depth Shadow
+    if ((m_pipelineFlg & PIPELINE_FLAGS::LIGHTING_MASK) != 0)
+    {
+        if ((m_pipelineFlg & PIPELINE_FLAGS::SKELTAL) != 0)
+        {
+            m_shadowMapPL = static_cast<ShadowMapPipeline*>(MyAccessHub::getMyGameEngine()->
+                GetPreDrawPipelineManager()->GetPipeLineObject(L"SkeltalShadowMap"));
+        }
+        else
+        {
+            m_shadowMapPL = static_cast<ShadowMapPipeline*>(MyAccessHub::getMyGameEngine()->
+                GetPreDrawPipelineManager()->GetPipeLineObject(L"StaticShadowMap"));
+        }
+    }
+    //======Depth Shadow End
 
     // cso (Compiled Shader Object) データ保存用
     struct
@@ -443,11 +487,18 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
     ThrowIfFailed(cmdList->Reset(cmdAl, m_pipeLineState.Get()));
     // この時コマンドリスト内にQueueで実行中のコマンドが残っているとエラー
 
-    CD3DX12_RESOURCE_BARRIER tra[2];
+    CD3DX12_RESOURCE_BARRIER tra[3];
 
     tra[0] =
         CD3DX12_RESOURCE_BARRIER::Transition(engine->GetRenderTarget(frameIndex),
             D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+    //======Depth Shadow
+    tra[1] =
+        CD3DX12_RESOURCE_BARRIER::Transition(engine->GetLightDepth(),
+            D3D12_RESOURCE_STATE_DEPTH_WRITE,
+            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    //======Depth Shadow End
 
     //======Edge Draw
     if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
@@ -465,15 +516,15 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
         engine->SetDefaultViewportAndRect(cmdList);
 
         //Resource Barrierの設定
-        tra[1] = CD3DX12_RESOURCE_BARRIER::Transition(pTextureMng->GetTexture(L"NormalBuffer")->m_pTexture.Get(),
+        tra[2] = CD3DX12_RESOURCE_BARRIER::Transition(pTextureMng->GetTexture(L"NormalBuffer")->m_pTexture.Get(),
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
             D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-        cmdList->ResourceBarrier(2, tra);   //第一引数は設定の数
+        cmdList->ResourceBarrier(3, tra);   //第一引数は設定の数
     }
     else
     {
-        cmdList->ResourceBarrier(1, tra);   //第一引数は設定の数
+        cmdList->ResourceBarrier(2, tra);   //第一引数は設定の数
         //RenderTargetとViewPortの設定
         engine->SetMainRenderTarget(cmdList);
     }
@@ -496,6 +547,29 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
         SetTextureToCommandLine(engine, pTextureMng, cmdList, m_toneIndex, L"ToneTexture");
     }
     //======Toon Shader End
+
+    //======Depth Shadow
+    if (m_shadowMapPL != nullptr)
+    {
+        //Shadow Mapは共有なので最初にセット
+        auto gpuHeap = m_srvHeap->GetGPUDescriptorHandleForHeapStart();
+        gpuHeap.ptr += engine->GetDirect3DDevice()->
+            GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * m_srvTexList[L"SHADOW_MAP"];
+
+        CD3DX12_GPU_DESCRIPTOR_HANDLE cbvSrvGpuHandle(gpuHeap);
+        cmdList->SetGraphicsRootDescriptorTable(m_shadowDepthIndex, cbvSrvGpuHandle);
+
+        auto dLight = LightSettingManager::GetInstance()->GetDirectionalLight(L"SCENE_DIRECTIONAL");
+
+        //light ProjectionをライトのViewとShadowMapが持っているProjectionをかけて計算
+        XMMATRIX lightVP = dLight->GetLightViewMtx() * m_shadowMapPL->GetLightProjectionMatrix();
+        XMMATRIX trLVP = XMMatrixTranspose(lightVP); //転置
+        engine->UpdateShaderResourceOnGPU(m_cbLightViewProjection.Get(), &trLVP, sizeof(XMMATRIX));
+
+        //Light VP セット
+        cmdList->SetGraphicsRootConstantBufferView(m_shadowDepthIndex + 1, m_cbLightViewProjection->GetGPUVirtualAddress());
+    }
+    //======Depth Shadow End
 
     // メッシュ個別設定
     for (auto charaData : m_renderList)
@@ -602,20 +676,27 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
     }
 
     // リソースバリア解除   
-    tra[0] = CD3DX12_RESOURCE_BARRIER::Transition(engine->GetRenderTarget(frameIndex), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+    tra[0] = CD3DX12_RESOURCE_BARRIER::Transition(engine->GetRenderTarget(frameIndex),
+        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
+    //======Depth Shadow
+    tra[1] = CD3DX12_RESOURCE_BARRIER::Transition
+    (engine->GetLightDepth(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+        D3D12_RESOURCE_STATE_DEPTH_WRITE);
+    //======Depth Shadow End
 
     //======Edge Draw
     if ((m_pipelineFlg & PIPELINE_FLAGS::Toon) == PIPELINE_FLAGS::Toon)
     {
-        tra[1] = CD3DX12_RESOURCE_BARRIER::Transition(pTextureMng->GetTexture(L"NormalBuffer")->m_pTexture.Get(),
+        tra[2] = CD3DX12_RESOURCE_BARRIER::Transition(pTextureMng->GetTexture(L"NormalBuffer")->m_pTexture.Get(),
             D3D12_RESOURCE_STATE_RENDER_TARGET,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-        cmdList->ResourceBarrier(2, tra);
+        cmdList->ResourceBarrier(3, tra);
     }
     else
     {
-        cmdList->ResourceBarrier(1, tra);
+        cmdList->ResourceBarrier(2, tra);
     }
     //======Edge Draw End
 
@@ -628,6 +709,14 @@ ID3D12GraphicsCommandList* StandardLightingPipeline::ExecuteRender()
 void StandardLightingPipeline::AddRenerObject(CharacterData* obj)
 {
     GraphicsPipeLineObjectBase::AddRenerObject(obj);    //通常処理
+
+    //======Depth Shadow (Pre Effect)
+    if (m_shadowMapPL != nullptr)
+    {
+        //登録されるCharacterDataをそのままシャドウマップにも追加（影出力対象に）
+        m_shadowMapPL->AddRenerObject(obj);
+    }
+    //======Depth Shadow (Pre Effect) End
 
     //======Post Effect
     if (m_postEffect != nullptr)
@@ -670,6 +759,29 @@ HRESULT StandardLightingPipeline::CreateDescriptorHeaps()
     HRESULT hr = d3dDev->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(m_srvHeap.ReleaseAndGetAddressOf()));
     
     if (FAILED(hr)) return hr;
+
+    //======Depth Shadow
+    if (m_shadowMapPL != nullptr)
+    {
+        D3D12_CPU_DESCRIPTOR_HANDLE heapHandle = m_srvHeap->GetCPUDescriptorHandleForHeapStart();
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MipLevels = 1;
+        d3dDev->CreateShaderResourceView(engine->GetLightDepth(), &srvDesc, heapHandle);
+
+        //パイプライン用テクスチャリストにラベル名と登録したインデックス番号を設定
+        m_srvTexList[L"SHADOW_MAP"] = m_numOfTex;
+        //登録用インデックス番号を進める
+        m_numOfTex++;
+
+        //LightのView Projection行列用
+        XMMATRIX mat = {};
+        engine->CreateConstantBuffer(m_cbLightViewProjection.ReleaseAndGetAddressOf(), &mat, sizeof(XMMATRIX));
+    }
+    //======Depth Shadow End
 
     return hr;
 }

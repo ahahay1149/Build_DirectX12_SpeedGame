@@ -27,7 +27,21 @@ public:
 	DirectionalLightData& GetLightData();	//光データ構造体取得
 	ID3D12Resource* GetConstantBuffer();	//シェーダ用Resource取得
 
+	//======Depth Shadow
+	// 光源のView行列更新
+	void UpdateLightBaseMatrix(XMFLOAT3& eyePos, XMFLOAT3& focusPos);
+
+	XMMATRIX GetLightViewMtx();				//View行列データの取得
+	ID3D12Resource* GetLightBaseMtxBuffer();//View行列のシェーダリソースを取得
+	//======Depth Shadow End
+
 private:
+
+	//======Depth Shadow
+	XMMATRIX m_lightViewMtx;				//View行列
+	ComPtr<ID3D12Resource> m_lightMtxBuff;	//View行列のシェーダリソース
+	//======Depth Shadow End
+
 	DirectionalLightData m_lightData;	//光データ本体
 	ComPtr<ID3D12Resource> m_cBuff;		//シェーダ用リソース
 
