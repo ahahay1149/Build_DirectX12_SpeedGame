@@ -9,10 +9,11 @@ void TerrainComponent::initAction()
 	FBXCharacterData* fbxChara = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
 	//fbxChara->SetGraphicsPipeLine(L"StaticFBX");
 	//fbxChara->SetGraphicsPipeLine(L"StaticLambert");		//Lambert
-	//chdata->SetGraphicsPipeLine(L"StaticPhong");			//Phong
-	//chdata->SetGraphicsPipeLine(L"StaticBlinn");			//Blinn Phong
+	//fbxChara->SetGraphicsPipeLine(L"StaticPhong");		//Phong
+	//fbxChara->SetGraphicsPipeLine(L"StaticBlinn");		//Blinn Phong
 	fbxChara->SetGraphicsPipeLine(L"StaticToon");			//Toon
 
+	fbxChara->SetShadowFlag(false);
 
 	//TerrainHit01
 	m_bloadHit.setAABBMinMax(fbxChara->GetMainFbx()->GetFbxMin(), fbxChara->GetMainFbx()->GetFbxMax());
@@ -50,6 +51,7 @@ bool TerrainComponent::frameAction()
 {
 	//PipeLineに登録
 	getGameObject()->getCharacterData()->GetPipeline()->AddRenerObject(getGameObject()->getCharacterData());
+
 	return true;
 }
 

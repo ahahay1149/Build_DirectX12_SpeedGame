@@ -34,13 +34,13 @@ void UnityChanPlayer::initAction()
 	chdata->setScale(0.01f, 0.01f, 0.01f);	//元モデルがかなり大きい（というかスカイドームとかとあってない）ので縮小
 	chdata->setPosition(0.0f, 0.0f, 0.0f);	//初期値設定
 
-	//Unityちゃんの判定設定を作る。
+	//Unityちゃんの判定設定を作る
 	XMFLOAT3 min = chdata->GetMainFbx()->GetFbxMin();	//モデル全体の一番値の小さい座標	
 	XMFLOAT3 max = chdata->GetMainFbx()->GetFbxMax();	//モデル全体の一番値の大きい座標
 
 	float headY = (max.y - min.y) * 0.8f;								//Unityちゃんの頭座標をなんとなくで出す
 	m_unityChanHeadHeight = headY * chdata->getScale().y;				//スケールかけて空間中の高さに
-	//足元の「抜ける」高さを設定。坂の上り下り。
+	//足元の「抜ける」高さを設定。坂の上り下り
 	m_walkableHeight = (max.y - min.y) * 0.25f * chdata->getScale().y;
 
 	chdata->SetAnime(L"WAIT00");
@@ -64,7 +64,6 @@ void UnityChanPlayer::initAction()
 	m_currentTerrain = nullptr;	//初期状態地面なし
 	m_lastMatrix = XMMatrixIdentity();
 	//=====動く地形 対応 END
-
 }
 
 bool UnityChanPlayer::frameAction()
@@ -370,8 +369,8 @@ bool UnityChanPlayer::frameAction()
 	//判定セット
 	MyAccessHub::getMyGameEngine()->GetHitManager()->setHitArea(this, &bodyColl);
 
-	//UnityChanPlayer ImGui
-	imgui(chData);
+	//ImGui
+	imgui();
 
 	return true;
 }
@@ -387,42 +386,32 @@ void UnityChanPlayer::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 
 	//プレイヤークラス側でもハートの取得数をカウント
 	m_getHeartItems++;
-
-	//取得数を増やしたことをGameManagerに伝える
-	GameAccessHub::getGameManager()->plusHeartItemCount();
 }
 
-void UnityChanPlayer::imgui(FBXCharacterData* chData)
+void UnityChanPlayer::imgui()
 {
+	if (!ImguiProcessing::imguiSetting())
+		return;
+
 	ImGui::Begin("Window");
 	ImGui::Checkbox("UnityChanPlayer", &check);
 	ImGui::End();
 
 	if (check == true)
 	{
+		FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
+
 		ImGui::Begin("UnityChanPlayer");
 		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
 
-		ImGui::Combo("Shader", &selectShader, items, IM_ARRAYSIZE(items));
+		ImGui::SliderFloat("PlayerPlusSpeed", &m_plusSpeed, 0.0f, 1.0f);
+
+		if (ImGui::Button("ResetPos"))
+		{
+			chdata->setPosition(0.0f, 0.0f, 0.0f);
+			chdata->setRotation(0.0f, 0.0f, 0.0f);
+		}
 
 		ImGui::End();
-	}
-
-	//===imgui処理変更処理部分
-
-	switch (selectShader)
-	{
-	case 0:
-		chData->SetGraphicsPipeLine(L"SkeltalLambert");		//スキンアニメ有りFBX+Lambert
-		break;
-	case 1:
-		chData->SetGraphicsPipeLine(L"SkeltalPhong");		//スキンアニメ有りFBX+Phong
-		break;
-	case 2:
-		chData->SetGraphicsPipeLine(L"SkeltalBlinn");		//スキンアニメ有りFBX+BlinnPhong
-		break;
-	case 3:
-		chData->SetGraphicsPipeLine(L"SkeltalToon");		//スキンアニメ有りFBX+Toon
-		break;
 	}
 }

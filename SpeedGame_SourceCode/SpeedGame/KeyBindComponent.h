@@ -58,6 +58,10 @@ public:
 		MOUSE_R,
 		MOUSE_L,
 		MOUSE_C,
+
+		BUTTON_Q,
+		BUTTON_E,
+		BUTTON_R,
 	};
 
 	struct InputConfigData
@@ -94,4 +98,13 @@ public:
 		return m_currentInputType;
 	}
 
+//ImGui
+private:
+	bool m_debugWindowFlg = false;
+
+public:
+	bool getWindowBool()
+	{
+		return m_debugWindowFlg;
+	}
 };

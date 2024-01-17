@@ -1,39 +1,41 @@
 ﻿#pragma once
 #include "GameObject.h"
+#include "HeartItemComponent.h"
+#include "ImguiProcessing.h"
+#include "UnityChanPlayer.h"
 
-class GameManager : public GameComponent
+constexpr float Max_Count   = 30.0f;
+constexpr float Start_Count = 4.0f;
+
+class GameManager :
+    public GameComponent, public ImguiProcessing
 {
 private:
     //===Player
-    int heartItem;  //取得したハートのカウント
-    //========
+    int m_heartItemCount;   //取得したハートのカウント
+    //=========
 
     //===Time
-    float timerCount = 30.0f;   //ゲームの制限時間
-    float startCount = 4.0f;    //カウントダウンの時間
+    float timerCount = Max_Count;       //ゲームの制限時間
+    float startCount = Start_Count;     //カウントダウンの時間
+    //========
 
-    float clearScore = 0.0f;    //クリア時の残り時間
-    float bestScore = 0.0f;     //ゲーム全体でのベストタイム
+    //===Score
+    float bestScore = 0.0f;             //ゲーム全体でのベストタイム
+    float clearScore = 0.0f;            //クリア時の残り時間
     //========
 
     //===Sound
     // 再生を行っている音のidを格納する
-    int playingMusic[3];
+    int m_playingMusic[3];  //0:InGame //1:GameClear //2:GameOver
     //========
     
     //===Scene
     UINT m_scene;   //現在のシーン
     //========
 
-    //ImGui
-    bool check = false;
-
-private:
-    void ChangeSceneInit(UINT scene);
+    void changeSceneInit(UINT scene);
     void countTimer();
-
-    //ImGui
-    void imgui();
 
 public:
     // GameComponent を介して継承されました
@@ -63,14 +65,23 @@ public:
         return bestScore;
     }
 
-    int getHeartItem()
+    int getHeartItemCount()
     {
-        return heartItem;
+        return m_heartItemCount;
     }
 
-    void plusHeartItemCount()
+    void setPlusHeartItemCount(int heartCount)
     {
-        heartItem++;
+        m_heartItemCount += heartCount;
     }
+
+private:
+    //ImGui
+    void imgui() override;
+
+    bool timerStop = false;
+    float count = 0.0f;
+
+    int selectScene = -1;
+    const char* sceneItems[4] = { "Title","In_Game","Game_Over", "Game_Clear" };
 };
-

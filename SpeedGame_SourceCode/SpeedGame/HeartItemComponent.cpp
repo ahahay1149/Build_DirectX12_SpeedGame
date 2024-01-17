@@ -4,17 +4,15 @@
 #include "GameAccessHub.h"
 #include "GamePrograming3Enum.h"
 
-#include "UnityChanPlayer.h"
-
 void HeartItemComponent::initAction()
 {
 	//FBXCharacterDataは基底クラスのGameObjectにセットする
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
 	//chdata->SetGraphicsPipeLine(L"StaticFBX");
 	//chdata->SetGraphicsPipeLine(L"StaticLambert");		//Lambert
-	//chdata->SetGraphicsPipeLine(L"StaticPhong");			//Phong
+	chdata->SetGraphicsPipeLine(L"StaticPhong");			//Phong
 	//chdata->SetGraphicsPipeLine(L"StaticBlinn");			//Blinn Phong
-	chdata->SetGraphicsPipeLine(L"StaticToon");				//Toon
+	//chdata->SetGraphicsPipeLine(L"StaticToon");			//Toon
 
 	chdata->setScale(0.01f, 0.01f, 0.01f);	//元モデルがかなり大きい（というかスカイドームとかとあってない）ので縮小
 
@@ -26,39 +24,33 @@ void HeartItemComponent::initAction()
 
 	m_itemHit.setRadius(m_centerY * 0.8f);	//かなり適当な半径設定
 	m_itemHit.setAttackType((UINT)HIT_ORDER::HIT_ITEM, 0);
-	sta = 0;
 }
 
 bool HeartItemComponent::frameAction()
 {
-	switch (sta)
-	{
-	case 0:
+	bool activeCheck = isActive();
+	if (activeCheck == true)
 	{
 		FBXCharacterData* chData = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
 
 		chData->GetPipeline()->AddRenerObject(chData);
 
-		XMFLOAT3 pos = chData->getPosition();
+		m_pos = chData->getPosition();
 
-		m_itemHit.setCenter(pos.x, pos.y + m_centerY, pos.z);
+		m_itemHit.setCenter(m_pos.x, m_pos.y + m_centerY, m_pos.z);
 
 		MyAccessHub::getMyGameEngine()->GetHitManager()->setHitArea(this, &m_itemHit);
 
-		//ここでハートの位置を移動
+		//ここでハートの向きを動かす
 		srand((unsigned int)time(nullptr));
-		rotation.y += 0.1f * (rand() % 5 + 1);
-		if (rotation.y > 360.0f)
-			rotation.y = 0.0f;
-		chData->setRotation(rotation.x, rotation.y, rotation.z);
-	}
-		break;
-
-	default:
-		//取得後
-		break;
+		m_rotation.y += 0.1f * (rand() % 5 + 1);
+		if (m_rotation.y > 360.0f)
+			m_rotation.y = 0.0f;
+		chData->setRotation(m_rotation.x, m_rotation.y, m_rotation.z);
 	}
 
+	//ImGui
+	imgui();
 
 	return true;
 }
@@ -69,17 +61,49 @@ void HeartItemComponent::finishAction()
 
 void HeartItemComponent::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 {
-	sta = 1;
-	UnityChanPlayer* unityChan = GameAccessHub::getUnityChan();
-	unityChan->plusSpeedCount(m_playerSpeed);
+	setActive(false);
+	GameAccessHub::getUnityChan()->setSpeedCount(m_playerSpeed);
+	GameAccessHub::getGameManager()->setPlusHeartItemCount(m_heartPoint);
+
 }
 
-void HeartItemComponent::setPlayerSpeed(float playerSpeed)
+void HeartItemComponent::imgui()
 {
-	m_playerSpeed = playerSpeed;
+	if (!ImguiProcessing::imguiSetting())
+		return;
+
+	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
+
+	ImGui::Begin("Window");
+	ImGui::BeginChild(ImGui::GetID((void*)0), ImVec2(250, 100), ImGuiWindowFlags_NoTitleBar);
+	ImGui::Checkbox((id).c_str(), &check);
+	ImGui::EndChild();
+	ImGui::End();
+
+	if (check == true)
+	{
+		ImGui::Begin("HeartItem");
+		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
+
+		ImGui::PushID(id.c_str());
+		ImGui::SeparatorText((id).c_str());
+
+		if (ImGui::SliderFloat3("Position", &m_pos.x, -30.0f, 30.0f))
+			chdata->setPosition(m_pos.x, m_pos.y, m_pos.z);
+
+		ImGui::SliderFloat("Rotate", &m_rotation.y, 0.0f, 360.0f);
+
+		if (ImGui::Button("ResetPos"))
+			chdata->setPosition(m_initPos.x, m_initPos.y, m_initPos.z);
+
+		ImGui::PopID();
+
+		ImGui::End();
+	}
 }
 
-float HeartItemComponent::getPlayerSpeed()
+void HeartItemComponent::imguiInit()
 {
-	return m_playerSpeed;
+	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
+	m_initPos = chdata->getPosition();
 }

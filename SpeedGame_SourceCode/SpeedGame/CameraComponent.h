@@ -2,14 +2,19 @@
 
 #include <GameObject.h>
 
+#include "ImguiProcessing.h"
+
 using namespace DirectX;
 
-class CameraComponent : public GameComponent
+class CameraComponent :
+	public GameComponent, public ImguiProcessing
 {
 private:
 	XMFLOAT3	m_normal;
 	XMFLOAT3	m_focus;
 	XMFLOAT3	m_direction;
+
+	XMFLOAT3	m_pos;
 
 	float		m_near;
 	float		m_far;
@@ -21,11 +26,6 @@ private:
 	bool updateFlg;
 
 	void initAction() override;			//コンポーネント初期化時に呼ばれる処理
-
-	//ImGui
-	bool check = false;
-
-	void imgui();
 
 public:
 	bool frameAction() override;		//毎フレーム呼ばれる処理　falseを返すとこのコンポーネントは終了し削除される
@@ -78,4 +78,12 @@ public:
 		return XMFLOAT2(m_near, m_far);
 	}
 
+private:
+	//ImGui
+	void imgui() override;
+	void imguiInit() override;
+
+	XMFLOAT3	m_initNormal;
+	XMFLOAT3	m_initFocus;
+	float		m_initFov;
 };

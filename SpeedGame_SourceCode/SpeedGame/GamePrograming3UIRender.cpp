@@ -45,14 +45,14 @@ bool GamePrograming3UIRender::frameAction()
 	else
 	{
 		sprintf_s(countText, "");
-
-		//ゲーム中のカウントダウンUI制御
-		float timerCount = gm->getTimerCount();
-		sprintf_s(timerText, "Time %.3f", timerCount);
 	}
 
+	//ゲーム中のカウントダウンUI制御
+	float timerCount = gm->getTimerCount();
+	sprintf_s(timerText, "Time %.3f", timerCount);
+
 	//ハートアイテムの取得数カウント
-	sprintf_s(itemText, "Item %d / 5", gm->getHeartItem());
+	sprintf_s(itemText, "Item %d / 5", gm->getHeartItemCount());
 
 	count = MakeSpriteString(count, x, y, 24, 24, itemText);
 	count = MakeSpriteString(count, x, y - 60, 24, 24, timerText);

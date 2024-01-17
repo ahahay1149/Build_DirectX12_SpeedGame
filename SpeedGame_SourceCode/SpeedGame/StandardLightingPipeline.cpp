@@ -711,7 +711,8 @@ void StandardLightingPipeline::AddRenerObject(CharacterData* obj)
     GraphicsPipeLineObjectBase::AddRenerObject(obj);    //通常処理
 
     //======Depth Shadow (Pre Effect)
-    if (m_shadowMapPL != nullptr)
+    FBXCharacterData* fbxChara = static_cast<FBXCharacterData*>(obj);
+    if (m_shadowMapPL != nullptr && fbxChara->GetShadowFlag())
     {
         //登録されるCharacterDataをそのままシャドウマップにも追加（影出力対象に）
         m_shadowMapPL->AddRenerObject(obj);

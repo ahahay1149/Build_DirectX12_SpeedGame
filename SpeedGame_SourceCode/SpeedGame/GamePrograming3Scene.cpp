@@ -168,7 +168,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 		{
 		case static_cast<UINT>(GAME_SCENES::INIT):	//ゲームシステム全体の初期化
 			//テクスチャと効果音の読み込み
-			{				
+			{
 				//=====Camera Change Phase 1
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"HUDTexture", L"./Resources/textures/HUD/UITexture.png");
 				//=====Camera Change Phase 1 End
@@ -333,13 +333,21 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				m_systemObject->addComponent(m_keyComponent);
 				engine->AddGameObject(m_systemObject.get());
 
+				//ImguiManagerオブジェクト登録
+				m_imguiManagerObject = make_unique<GameObject>(nullptr);
+				m_imguiManager = new ImguiManager();
+				m_imguiManagerObject->addComponent(m_imguiManager);
+				engine->AddGameObject(m_imguiManagerObject.get());
+
 				//GameManagerオブジェクト登録
 				m_gameManagerObject = make_unique<GameObject>(nullptr);
-				m_gameManagerConponent = new GameManager();
-				m_gameManagerObject->addComponent(m_gameManagerConponent);
-				engine->AddGameObject(m_gameManagerObject.get());
-				GameAccessHub::setGameManager(m_gameManagerConponent);
+				m_gameManager = new GameManager();
+				m_gameManagerObject->addComponent(m_gameManager);
+				GameAccessHub::setGameManager(m_gameManager);
+				//ImGui Set
+				m_imguiManager->setImguiObject("GameManager", m_gameManager, DEBUG_FLAG::Scene_All);
 
+				engine->AddGameObject(m_gameManagerObject.get());
 
 				engine->UploadCreatedTextures();
 
@@ -386,6 +394,9 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				TerrainComponent* trCom = new TerrainComponent();
 				terrainObj->addComponent(trCom);
 
+				//ImGui Set
+				m_imguiManager->setImguiObject("Stage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
+
 				AddSceneObject(terrainObj);
 				
 				//m_terrainsにTerrainComponentを登録
@@ -405,8 +416,10 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				trCom = new TerrainComponent();
 				terrainObj->addComponent(trCom);
 
-				terrainObj->addComponent(new MovingPlatform());
+				//ImGui Set
+				m_imguiManager->setImguiObject("MovingStage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
 
+				terrainObj->addComponent(new MovingPlatform());
 				AddSceneObject(terrainObj);
 
 				//m_terrainsにTerrainComponentを登録
@@ -439,6 +452,8 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				unityChanObj = new GameObject(unityChanFbx);	//FBXCharacterDataを持たせて初期化
 				unityChanObj->addComponent(unityChanPlayer);	//UnityChan本体コンポーネントをセット
 				GameAccessHub::setUnityChan(unityChanPlayer);
+				//ImGui Set
+				m_imguiManager->setImguiObject("UnityChanPlayer", unityChanPlayer, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Player | DEBUG_FLAG::Shader_Player);
 				AddSceneObject(unityChanObj);
 
 				//カメラ
@@ -451,14 +466,18 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				m_cameraComponents[L"MainCamera"] = camComp;
 
 				cameraObj->addComponent(camComp);
+				//ImGui Set
+				m_imguiManager->setImguiObject("CameraComponent", camComp, DEBUG_FLAG::Scene_InGame);
 				AddSceneObject(cameraObj);
 
 				//本当はCameraComponent本体より先に動いて欲しい
 				FlyingCameraController* flyCam = new FlyingCameraController();
 				cameraObj->addComponent(flyCam);
+				m_imguiManager->setImguiObject("FlyingCamera", flyCam, DEBUG_FLAG::Scene_InGame);
 
 				ThirdPersonCameraController* tpCam = new ThirdPersonCameraController();
 				cameraObj->addComponent(tpCam);
+				m_imguiManager->setImguiObject("ThirdPersonCamera", tpCam, DEBUG_FLAG::Scene_InGame);
 
 				tpCam->setActive(false);	//初期状態OFFに
 
@@ -509,25 +528,26 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				{
 					float x, y, z;
 					float playerSpeed;
+					int points;
 				};
 
 				HeartInfo heartInfo[heartNum]
 				{
-					3.0f, 0.0f, 8.0f,			0.02f,
-					-11.0f, -4.0f, 10.0f,		0.04f,
-					13.0f, -3.0f, 22.0f,		0.02f,
-					0.0f, -6.0f, 20.0f,			0.02f,
-					-7.0f, -4.0f, 18.0f,		0.02f,
-					20.0f, 0.0f, 20.0f,			0.02f,
-					25.0f, 1.0f, 15.0f,			0.03f,
-					7.0f, -8.0f, 30.0f,			0.01f,
-					15.0f, 0.0f, 10.0f,			0.02f,
-					10.0f, 15.0f, 10.0f,		0.1f
+					3.0f, 0.0f, 8.0f,		0.02f,	1,
+					-11.0f, -4.0f, 10.0f,	0.04f,	1,
+					13.0f, -3.0f, 22.0f,	0.02f,	1,
+					0.0f, -6.0f, 20.0f,		0.02f,	1,
+					-7.0f, -4.0f, 18.0f,	0.02f,	1,
+					20.0f, 0.0f, 20.0f,		0.02f,	1,
+					25.0f, 1.0f, 15.0f,		0.03f,	1,
+					7.0f, -8.0f, 30.0f,		0.01f,	1,
+					15.0f, 0.0f, 10.0f,		0.02f,	1,
+					10.0f, 15.0f, 10.0f,	0.1f,	1,
 				};
 
 				//使いまわしするのでここで宣言
 				GameObject* heartObj;
-				HeartItemComponent* heartItem;	
+				HeartItemComponent* heartItem;
 
 				//ハート生成
 				for (int i = 0; i < heartNum; i++)
@@ -539,7 +559,12 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 					heartObj = new GameObject(heartFbx);
 					heartItem = new HeartItemComponent();
 					heartItem->setPlayerSpeed(heartInfo[i].playerSpeed);
+					heartItem->setHeartPoint(heartInfo[i].points);
 					heartObj->addComponent(heartItem);
+
+					//ImGui Set
+					m_imguiManager->setImguiObject("HeartItem:" + std::to_string(i + 1), heartItem, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_HeartItem | DEBUG_FLAG::Shader_Stage);
+
 					AddSceneObject(heartObj);
 				}
 
@@ -600,8 +625,8 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 		m_scene = scene;
 
-		//GameManagerでもシーン変更時の処理を実行する
-		GameAccessHub::getGameManager()->sendScene(scene);
+		//シーン変更時の処理を実行する
+		m_gameManager->sendScene(scene);
 
 		engine->WaitForGpu();	//GPU待機（テクスチャアップロード等）
 	}

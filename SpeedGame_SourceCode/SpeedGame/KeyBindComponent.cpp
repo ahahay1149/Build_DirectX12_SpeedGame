@@ -26,8 +26,13 @@ bool KeyBindComponent::frameAction()
 	m_mousePrePos = m_mousePos;
 	m_mousePos = m_inputMng->getMousePosition();
 
+	if (getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BUTTON_E))
+	{
+		m_debugWindowFlg = !m_debugWindowFlg;
+	}
+
 	return true;
-}
+} 
 
 void KeyBindComponent::finishAction()
 {
@@ -166,5 +171,10 @@ void KeyBindComponent::initAction()
 	m_configData[INPUT_TYPES::KEYBOARD]->m_buttonMap[BUTTON_IDS::MOVE_BACK] = 'S';
 	m_configData[INPUT_TYPES::KEYBOARD]->m_buttonMap[BUTTON_IDS::MOVE_RIGHT] = 'D';
 	m_configData[INPUT_TYPES::KEYBOARD]->m_buttonMap[BUTTON_IDS::BTN_JUMP] = VK_SPACE;
+
+	m_configData[INPUT_TYPES::KEYBOARD]->m_buttonMap[BUTTON_IDS::BUTTON_Q] = 'Q';
+	m_configData[INPUT_TYPES::KEYBOARD]->m_buttonMap[BUTTON_IDS::BUTTON_E] = 'E';
+	m_configData[INPUT_TYPES::KEYBOARD]->m_buttonMap[BUTTON_IDS::BUTTON_R] = 'R';
+
 }
 

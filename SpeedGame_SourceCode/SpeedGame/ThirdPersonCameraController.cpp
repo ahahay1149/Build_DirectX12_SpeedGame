@@ -4,12 +4,6 @@
 
 #include "GamePrograming3Scene.h"
 
-//ImGui
-#include "imgui.h"
-#include "imgui_impl_win32.h"
-#include "imgui_impl_dx12.h"
-
-
 void ThirdPersonCameraController::initAction()
 {
 	GamePrograming3Scene* scene = dynamic_cast<GamePrograming3Scene*>(MyAccessHub::getMyGameEngine()->GetSceneController());
@@ -87,6 +81,7 @@ bool ThirdPersonCameraController::frameAction()
 	m_camera->changeCameraPosition(pos.m128_f32[0], pos.m128_f32[1], pos.m128_f32[2]);
 	//02: ここまで
 
+	//ImGui
 	imgui();
 
 	return true;
@@ -98,6 +93,9 @@ void ThirdPersonCameraController::finishAction()
 
 void ThirdPersonCameraController::imgui()
 {
+	if (!ImguiProcessing::imguiSetting())
+		return;
+
 	ImGui::Begin("Window");
 	ImGui::Checkbox("ThirdPersonCameraController", &check);
 	ImGui::End();

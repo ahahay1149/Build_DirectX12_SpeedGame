@@ -145,7 +145,7 @@ HRESULT ShadowMapPipeline::InitPipeLineStateObject(ID3D12Device2* d3dDev)
     MyGameEngine* engine = MyAccessHub::getMyGameEngine();
 
     //定数バッファ作成
-    m_lightProjMtx = XMMatrixOrthographicLH(engine->GetLightDepthTextureSize().x * 0.02f, engine->GetLightDepthTextureSize().y * 0.02f, 0.01f, 100.0f);
+    m_lightProjMtx = XMMatrixOrthographicLH(engine->GetLightDepthTextureSize().x * 0.04f, engine->GetLightDepthTextureSize().y * 0.04f, 0.01f, 100.0f);
     XMMATRIX trLPMtx = XMMatrixTranspose(m_lightProjMtx);
     engine->CreateConstantBuffer(m_cbLightProjMtx.GetAddressOf(), nullptr, sizeof(XMMATRIX));
 

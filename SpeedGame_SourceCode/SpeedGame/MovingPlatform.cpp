@@ -22,12 +22,11 @@ bool MovingPlatform::frameAction()
 	const float addRot = 1.0f;
 	const float moveLength = 10.0f;
 
-	CharacterData* chd = getGameObject()->getCharacterData();
+	bool activeCheck = isActive();
+	if (activeCheck == true)
+	{
+		CharacterData* chd = getGameObject()->getCharacterData();
 
-	switch (sta)
-	{
-	case 0:
-	{
 		//X移動
 		hRad += addH;
 		hRad = addH > XM_PI ? hRad - 2.0f * XM_PI : hRad < -XM_PI ? hRad + 2.0f * XM_PI : hRad;
@@ -41,11 +40,6 @@ bool MovingPlatform::frameAction()
 		rotDeg = rotDeg > 180.0f ? rotDeg - 360.0f : rotDeg < -180.0f ? rotDeg + 360.0f : rotDeg;
 
 		chd->setRotation(0, rotDeg, 0);
-	}
-		break;
-
-	default:
-		break;
 	}
 
 	return true;

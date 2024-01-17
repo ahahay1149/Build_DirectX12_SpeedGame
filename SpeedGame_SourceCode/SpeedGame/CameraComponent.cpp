@@ -10,11 +10,6 @@
 #include "LightSettingManager.h"
 //======Depth Shadow End
 
-//ImGui
-#include "imgui.h"
-#include "imgui_impl_win32.h"
-#include "imgui_impl_dx12.h"
-
 void CameraComponent::initAction()
 {
 	m_normal.x = 0.0f;
@@ -49,9 +44,9 @@ bool CameraComponent::frameAction()
 		MyGameEngine* engine = MyAccessHub::getMyGameEngine();
 		CharacterData* chData = getGameObject()->getCharacterData();
 
-		XMFLOAT3 pos = chData->getPosition();
+		m_pos = chData->getPosition();
 
-		XMVECTOR Eye = XMVectorSet(pos.x, pos.y, pos.z, 0.0f);					//視点（カメラ）座標
+		XMVECTOR Eye = XMVectorSet(m_pos.x, m_pos.y, m_pos.z, 0.0f);					//視点（カメラ）座標
 		XMVECTOR At = XMVectorSet(m_focus.x, m_focus.y, m_focus.z, 0.0f);		//フォーカスする（カメラが向く）座標
 		XMVECTOR Up = XMVectorSet(m_normal.x, m_normal.y, m_normal.z, 0.0f);	//カメラの上方向単位ベクトル（カメラのロール軸）
 
@@ -59,7 +54,7 @@ bool CameraComponent::frameAction()
 		engine->UpdateCameraMatrixForComponent(m_fov, Eye, At, Up, m_width, m_height, m_near, m_far);
 
 		//カメラの向き。これは描画用ではない
-		XMVECTOR camdir = XMVector3Normalize(XMVectorSet(m_focus.x - pos.x, m_focus.y - pos.y, m_focus.z - pos.z, 0.0f) );
+		XMVECTOR camdir = XMVector3Normalize(XMVectorSet(m_focus.x - m_pos.x, m_focus.y - m_pos.y, m_focus.z - m_pos.z, 0.0f) );
 		m_direction.x = XMVectorGetX(camdir);
 		m_direction.y = XMVectorGetY(camdir);
 		m_direction.z = XMVectorGetZ(camdir);
@@ -71,10 +66,11 @@ bool CameraComponent::frameAction()
 		//======Depth Shadow
 		GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(engine->GetSceneController());
 		auto dLight = LightSettingManager::GetInstance()->GetDirectionalLight(L"SCENE_DIRECTIONAL");
-		dLight->UpdateLightBaseMatrix(pos, m_focus);
+		dLight->UpdateLightBaseMatrix(m_pos, m_focus);
 		//======Depth Shadow End
 	}
 
+	//ImGui
 	imgui();
 
 	return true;
@@ -134,8 +130,22 @@ void CameraComponent::changeCameraFOVRadian(float fovRad)
 	updateFlg = true;
 }
 
+void CameraComponent::imguiInit()
+{
+	m_initNormal.x = m_normal.x;
+	m_initNormal.y = m_normal.y;
+	m_initNormal.z = m_normal.z;
+
+	m_initFocus.x = m_focus.x;
+	m_initFocus.y = m_focus.y;
+	m_initFocus.z = m_focus.z;
+}
+
 void CameraComponent::imgui()
 {
+	if (!ImguiProcessing::imguiSetting())
+		return;
+
 	ImGui::Begin("Window");
 	ImGui::Checkbox("CameraComponent", &check);
 	ImGui::End();
@@ -144,6 +154,23 @@ void CameraComponent::imgui()
 	{
 		ImGui::Begin("CameraComponent");
 		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
+
+		ImGui::Separator();
+		ImGui::SliderFloat3("Focus", &m_focus.x, -10.0f, 10.0f);
+		ImGui::SliderFloat3("Normal", &m_normal.x, -1.0f, 1.0f);
+		ImGui::Separator();
+		if(ImGui::Button("ResetFocus"))
+		{
+			m_focus.x = m_initFocus.x;
+			m_focus.y = m_initFocus.y;
+			m_focus.z = m_initFocus.z;
+		}
+		if (ImGui::Button("ResetNormal"))
+		{
+			m_normal.x = m_initNormal.x;
+			m_normal.y = m_initNormal.y;
+			m_normal.z = m_initNormal.z;
+		}
 
 		ImGui::End();
 	}

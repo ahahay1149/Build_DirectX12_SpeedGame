@@ -10,8 +10,11 @@
 
 #include "FBXCharacterData.h"
 
+//ImGui
+#include "ImguiProcessing.h"
+
 class UnityChanPlayer :
-    public GameComponent
+    public GameComponent, public ImguiProcessing
 {
 private:
     float	m_unityChanHeadHeight;  //頭部までのオフセット
@@ -42,13 +45,6 @@ private:
     //UnityChanの加速度
     float m_plusSpeed;
 
-    //ImGui
-    bool check = false;
-    int selectShader = -1;
-    const char* items[4] = { "Lambert","Phong","Blinn Phong", "Toon"};
-
-    void imgui(FBXCharacterData* chData);
-
 public:
     // GameComponent を介して継承されました
     virtual void initAction() override;
@@ -64,8 +60,14 @@ public:
     }
 
     //ハートにある値分スピードを足す
-    void plusSpeedCount(float speed)
+    void setSpeedCount(float speed)
     {
         m_plusSpeed += speed;
     }
+
+    //ImGui
+    void imgui() override;
+
+    XMFLOAT3 m_initPos;
+    XMFLOAT3 imguiPos = { 0,0,0 };
 };

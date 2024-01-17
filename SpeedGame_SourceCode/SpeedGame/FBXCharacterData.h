@@ -44,6 +44,9 @@ private:
 	std::wstring m_directionalLight;	//LightSettingManagerから受け取る平行光源データのラベル
 	//======Lighting End
 
+	//影の出力を制御するフラグ
+	bool m_shadowFlg = true;
+
 public:
 
 	//Phase 3
@@ -95,4 +98,16 @@ public:
 		return m_directionalLight;
 	}
 	//======Lighting End
+
+	//======Shadow Flag
+	void SetShadowFlag(bool flg)
+	{
+		m_shadowFlg = flg;
+	}
+
+	bool GetShadowFlag()
+	{
+		return m_shadowFlg;
+	}
+	//======Shadow Flag End
 };

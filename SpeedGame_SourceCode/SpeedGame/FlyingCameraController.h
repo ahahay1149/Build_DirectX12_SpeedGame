@@ -2,7 +2,10 @@
 #include <GameObject.h>
 #include "CameraComponent.h"
 
-class FlyingCameraController : public GameComponent
+#include "ImguiProcessing.h"
+
+class FlyingCameraController :
+	public GameComponent, public ImguiProcessing
 {
 private:
 	CameraComponent* m_camera;
@@ -14,4 +17,7 @@ public:
 	bool frameAction() override;	//毎フレーム呼ばれる処理
 	void finishAction() override;	//終了時に呼ばれる処理
 
+private:
+	//ImGui
+	void imgui() override;
 };

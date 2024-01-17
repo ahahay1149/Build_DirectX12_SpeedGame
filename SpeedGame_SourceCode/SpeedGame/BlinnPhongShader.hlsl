@@ -41,7 +41,17 @@ float4 main(VS_OUT input) : SV_TARGET
         //======Blinn-Phong反射モデル End
     }
     //======Specular Map End
-    
+
+    //======Depth Shadow
+    float4 shadowColor = GetShadowColor(input.lightPos, ShadowMapTex, ShadowSampler);		//深度バッファシャドウ計算
+    tex_color *= shadowColor;	//テクスチャ自体の色に補正値
+
+    if (shadowColor.x < 1.0f)
+    {
+        tex_color.z *= 0.2f;	//最も暗くする
+    }
+    //======Depth Shadow End
+
     //テクスチャカラー * (ディフューズカラー(Light + Ambient)) + スペキュラーカラー
     float4 finalColor = tex_color * (diffuse + AmbientColor) + specular;
     finalColor.w = tex_color.w;

@@ -10,6 +10,7 @@
 #include "TerrainComponent.h"
 
 #include "GameManager.h"
+#include "ImguiManager.h"
 
 //=========Scene Change
 class GamePrograming3Scene;
@@ -41,8 +42,13 @@ private:
 
 	std::unique_ptr<GameObject> m_systemObject;
 
+	//GameManager
 	std::unique_ptr<GameObject> m_gameManagerObject;
-	GameManager* m_gameManagerConponent;
+	GameManager* m_gameManager;
+
+	//ImguiManager
+	std::unique_ptr<GameObject> m_imguiManagerObject;
+	ImguiManager* m_imguiManager;
 
 	//====CameraFix
 	GameComponent* m_keyComponent;
@@ -78,26 +84,6 @@ public:
 		}
 
 		return nullptr;
-	}
-
-	void setClearCount(float timer)
-	{
-		clearCount = timer;
-	}
-
-	float getClearCount()
-	{
-		return clearCount;
-	}
-
-	void setBestScore(float timer)
-	{
-		bestScore = timer;
-	}
-
-	float getBestScore()
-	{
-		return bestScore;
 	}
 
 	//現在のシーン番号を送る

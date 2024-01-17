@@ -32,7 +32,7 @@ float4 main(PS_INPUT input) : SV_Target
     //合成法線の長さが0.8以上、または合成深度値が+-0.003を超えていたら端と判定
     if(length(normal) >= 0.8f || abs(depth) > 0.003f)
     {
-        color = float4(0.4f, 0.4f, 0.4f, 1);    //端なので輪郭線。色を暗くする
+        color = float4(0.6f, 0.6f, 0.6f, 1);    //端なので輪郭線。色を暗くする
     }
     else
     {

@@ -12,8 +12,7 @@ private:
 
 public:
     // GameComponent を介して継承されました
-    virtual void initAction() override;
-    virtual bool frameAction() override;
-    virtual void finishAction() override;
+    void initAction() override;
+    bool frameAction() override;
+    void finishAction() override;
 };
-

@@ -98,9 +98,8 @@ bool TitleSceneSample::frameAction()
 		{
 			sta = 1;
 		}
-		else if ((keyBind->getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::MOUSE_L)
-			|| keyBind->getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::MOUSE_R))
-			&& currentScene != static_cast<UINT>(GAME_SCENES::TITLE))
+		else if (keyBind->getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BUTTON_R)
+				&& currentScene != static_cast<UINT>(GAME_SCENES::TITLE))
 		{
 			SetNextScene(GAME_SCENES::IN_GAME);
 			sta = 1;

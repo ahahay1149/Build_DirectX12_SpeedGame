@@ -15,7 +15,7 @@ Texture2D ToneTex : register(t3, space0);	//Texture‚ğƒXƒƒbƒg0‚Ì3”Ô–Ú‚ÌƒeƒNƒXƒ`ƒ
 TONE_OUT main(VS_OUT input)
 {
 	TONE_OUT res;
-
+	
 	float2 uv = input.uv;
 	float4 normal = input.wnml;
 
@@ -59,5 +59,5 @@ TONE_OUT main(VS_OUT input)
 	res.outNormal = float4(normal.x, normal.y, normal.z, 1.0f);
 	//======Edge Draw End
 
-	return res;
+    return res;
 }
