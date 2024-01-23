@@ -639,7 +639,11 @@ HRESULT FBXDataContainer::LoadTextureFromMaterial(const std::wstring matName, co
 			//テクスチャの登録IDはid_ファイル名
 			wchar_t idName[128];
 			wsprintfW(idName, L"%ls_%ls", id.c_str(), namebuff);
-			hr = texMng->CreateTextureFromFile(engine->GetDirect3DDevice(), idName, texturePath);
+			//======MipMap
+			//FBXからのテクスチャを強制的にMipMap対応する
+			hr = texMng->CreateTextureFromFile(engine->GetDirect3DDevice(), idName, texturePath, 8);	//全てのFBX用テクスチャをMipMapLV8に
+			//======MipMap End
+
 
 			if (FAILED(hr))
 			{

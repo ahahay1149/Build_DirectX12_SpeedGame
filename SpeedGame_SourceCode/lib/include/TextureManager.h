@@ -39,6 +39,11 @@ struct Texture2DContainer
 	//RTV
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvDesc;
 
+	//======MipMap
+	ComPtr<ID3D12Resource> m_pMipmap;	//MipMap作成時のサブリソース本体
+	int m_miplevels;					//このテクスチャのMipMapレベル
+	//======MipMap End
+
 	Texture2DContainer()
 	{
 		rtvDesc.ptr = 0;
@@ -50,6 +55,10 @@ struct Texture2DContainer
 		m_metaData = {};
 		m_scImage = {};
 		m_subresouceData = {};
+
+		//======MipMap
+		m_miplevels = 1;
+		//======MipMap End
 	}
 };
 
@@ -62,16 +71,30 @@ private:
 	void	ReleaseTexObj(Texture2DContainer* txbuff);
 	void	DestructTextureManager(void);
 
+	//======MipMap
+	ComPtr<ID3D12GraphicsCommandList> m_MipMapCmdList;	//MipMap生成コマンドリスト
+	ComPtr<ID3D12RootSignature> m_mipMapRootSignature;	//MipMapパイプラインのRootSignature
+	ComPtr<ID3D12PipelineState> m_psoMipMaps;			//MipMapパイプラインステート
+
+	std::list<Texture2DContainer*> m_mipmapGenerateList;	//MipMap生成テクスチャリスト
+
+	void InitMipMapGenerator();		//MipMapパイプライン作成メソッド
+	//======MipMap End
+
 public:
 
 	HRESULT InitTextureManager(void);
 
-	HRESULT CreateTextureFromFile(ID3D12Device* pD3D, std::wstring labelName, const wchar_t* filename);
+	//======MipMap
+	HRESULT CreateTextureFromFile(ID3D12Device* pD3D, std::wstring labelName, const wchar_t* filename, int mipmapLevel = 1);	//MipLevel設定追加
 
-	//=====MultiPath Rendering
+	void GenerateMipMap();	//MipMapテクスチャ生成開始メソッド
+	//======MipMap End
+
+	//======MultiPath Rendering
 	HRESULT CreateRenderTargetTexture(ID3D12Device* pD3D, std::wstring labelName, UINT width, UINT height,
 		DXGI_FORMAT dxgiFormat = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, UINT cpuFlag = 0);
-	//=====MultiPath Rendering End
+	//======MultiPath Rendering End
 
 	HRESULT UploadCreatedTextures(ID3D12Device* pD3D, ID3D12GraphicsCommandList* pCmdList, ID3D12CommandQueue* pCmdQueue);
 

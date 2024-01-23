@@ -570,6 +570,10 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 				engine->UploadCreatedTextures();
 
+				//======MipMap
+				engine->GetTextureManager()->GenerateMipMap();
+				//======MipMap End
+
 			}
 			break;
 

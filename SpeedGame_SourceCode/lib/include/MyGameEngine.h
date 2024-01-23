@@ -177,6 +177,13 @@ public:
         return m_commandAllocators[frameIndex].Get();
     }
 
+    //======MipMap
+    ID3D12CommandQueue* GetCommandQueue()
+    {
+        return m_pCommandQueue.Get();
+    }
+    //======MipMap End
+
     SceneController* GetSceneController()
     {
         return m_sceneCont.get();
