@@ -25,9 +25,20 @@ bool ImguiManager::frameAction()
 
 	m_scene = scene->getCurrentScene();
 
+	//FPS表示処理
+	ImGui::Begin("Window");
+	ImGui::SeparatorText("FPSCount");
+	ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	ImGui::Separator();
+	ImGui::Dummy(ImVec2(0.0f, 10.0f));
+	ImGui::End();
+
+	//各シーンごとに表示するウィジェットの処理
 	switch (m_scene)
 	{
 		case static_cast<UINT>(GAME_SCENES::IN_GAME):
+		case static_cast<UINT>(GAME_SCENES::IN_GAME02):
+		case static_cast<UINT>(GAME_SCENES::IN_GAME03):
 		{
 			ImGui::Begin("Window");
 			ImGui::Checkbox("Imgui:Shader", &shaderCheck);
@@ -44,7 +55,7 @@ bool ImguiManager::frameAction()
 		break;
 	}
 
-	//===ImGuiのUpdateを全て呼び出し
+	//===各コンポーネントのImgui処理を全て呼び出し
 	for (auto& it : m_imguiComponents)
 	{
 		it.second->imgui();
@@ -66,7 +77,7 @@ void ImguiManager::setImguiObject(std::string id, ImguiComponent* imgui, UINT32 
 	//ComponentにIdとDebugFlagを格納
 	imgui->setId(id);
 	imgui->setDebugFlag(flag);
-	//Initを格納した時点で呼び出し
+	//格納した時点でInitを呼び出し
 	imgui->imguiInit();
 
 	GameComponent* gameObj = dynamic_cast<GameComponent*>(imgui);
@@ -84,12 +95,16 @@ void ImguiManager::clearImguiObject(UINT scene)
 		//フラグを取得
 		UINT32 debugFlg = it->second->getDebugFlag();
 
-		//次のシーンのフラグorAllSceneフラグを持っていないコンポーネントを削除
+		//次のシーンのフラグ or AllSceneフラグを持っていないコンポーネントを削除
 		if (!(debugFlg & ImguiDebug::sceneMap.at(static_cast<GAME_SCENES>(scene)))
 			&& !(debugFlg & DEBUG_FLAG::Scene_All))
+		{
 			it = m_imguiComponents.erase(it);
+		}
 		else
+		{
 			++it;
+		}
 	}
 }
 

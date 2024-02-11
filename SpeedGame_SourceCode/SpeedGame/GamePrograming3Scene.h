@@ -64,6 +64,12 @@ private:
 	void ClearSceneObjects();
 	//=========Scene Change End
 
+	//===前のシーン情報を保持する
+	UINT m_preScene;
+
+	//各ステージの共通処理
+	HRESULT InGameSceneBase();
+
 public:
 	~GamePrograming3Scene();
 
@@ -86,10 +92,16 @@ public:
 		return nullptr;
 	}
 
-	//現在のシーン番号を送る
+	//現在のシーン識別情報を送る
 	UINT getCurrentScene()
 	{
 		return m_scene;
+	}
+
+	//1つ前のシーン識別情報を送る
+	UINT getPreviousScene()
+	{
+		return m_preScene;
 	}
 
 	//====CameraFix

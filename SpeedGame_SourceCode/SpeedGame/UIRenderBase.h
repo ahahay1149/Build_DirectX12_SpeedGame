@@ -7,12 +7,17 @@
 
 #include <memory>
 
+//===シーン遷移関係
+#include "GamePrograming3Scene.h"
+#include "GamePrograming3Enum.h"
+#include "KeyBindComponent.h"
+
 class UIRenderBase :
     public GameComponent
 {
 protected:
     //文字数上限
-    int m_spriteCount = 100;
+    int m_spriteCount = 200;
 
     //フォントデータに登録されている文字一覧。左上から順番
     const char* m_chList = "0123456789+-*/!?ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&<>abcdefghijklmnopqrstuvwxyz\"()[]|";

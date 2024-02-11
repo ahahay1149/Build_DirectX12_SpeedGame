@@ -2,10 +2,8 @@
 #include <GameObject.h>
 #include "CameraComponent.h"
 
-#include "ImguiComponent.h"
-
 class FlyingCameraController :
-	public GameComponent, public ImguiComponent
+	public GameComponent
 {
 private:
 	CameraComponent* m_camera;
@@ -16,8 +14,4 @@ public:
 	void initAction() override;		//コンポーネント初期化時に呼ばれる処理
 	bool frameAction() override;	//毎フレーム呼ばれる処理
 	void finishAction() override;	//終了時に呼ばれる処理
-
-private:
-	//ImGui
-	void imgui() override;
 };

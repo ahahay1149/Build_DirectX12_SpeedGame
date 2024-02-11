@@ -46,7 +46,7 @@ bool CameraComponent::frameAction()
 
 		m_pos = chData->getPosition();
 
-		XMVECTOR Eye = XMVectorSet(m_pos.x, m_pos.y, m_pos.z, 0.0f);					//視点（カメラ）座標
+		XMVECTOR Eye = XMVectorSet(m_pos.x, m_pos.y, m_pos.z, 0.0f);			//視点（カメラ）座標
 		XMVECTOR At = XMVectorSet(m_focus.x, m_focus.y, m_focus.z, 0.0f);		//フォーカスする（カメラが向く）座標
 		XMVECTOR Up = XMVectorSet(m_normal.x, m_normal.y, m_normal.z, 0.0f);	//カメラの上方向単位ベクトル（カメラのロール軸）
 
@@ -125,47 +125,4 @@ void CameraComponent::changeCameraFOVRadian(float fovRad)
 {
 	m_fov = fovRad;
 	updateFlg = true;
-}
-
-void CameraComponent::imguiInit()
-{
-	m_initNormal.x = m_normal.x;
-	m_initNormal.y = m_normal.y;
-	m_initNormal.z = m_normal.z;
-
-	m_initFocus.x = m_focus.x;
-	m_initFocus.y = m_focus.y;
-	m_initFocus.z = m_focus.z;
-}
-
-void CameraComponent::imgui()
-{
-	ImGui::Begin("Window");
-	ImGui::Checkbox("CameraComponent", &check);
-	ImGui::End();
-
-	if (check == true)
-	{
-		ImGui::Begin("CameraComponent");
-		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
-
-		ImGui::Separator();
-		ImGui::SliderFloat3("Focus", &m_focus.x, -10.0f, 10.0f);
-		ImGui::SliderFloat3("Normal", &m_normal.x, -1.0f, 1.0f);
-		ImGui::Separator();
-		if(ImGui::Button("ResetFocus"))
-		{
-			m_focus.x = m_initFocus.x;
-			m_focus.y = m_initFocus.y;
-			m_focus.z = m_initFocus.z;
-		}
-		if (ImGui::Button("ResetNormal"))
-		{
-			m_normal.x = m_initNormal.x;
-			m_normal.y = m_initNormal.y;
-			m_normal.z = m_initNormal.z;
-		}
-
-		ImGui::End();
-	}
 }

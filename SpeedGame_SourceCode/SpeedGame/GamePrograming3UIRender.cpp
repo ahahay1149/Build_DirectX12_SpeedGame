@@ -17,47 +17,68 @@ bool GamePrograming3UIRender::frameAction()
 	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
 	GraphicsPipeLineObjectBase* pipeLine = engine->GetPipelineManager()->GetPipeLineObject(L"Sprite");
 
-	GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(engine->GetSceneController());
-	GameManager* gm = GameAccessHub::getGameManager();
-
 	int count = 0;
-	float x = -480.0f + 30.0f;	//中心0,0 w960 h540
-	float y = 270.0f - 30.0f;
+
+	//中心0,0 w960 h540
+	float x = -480.0f + 30.0f;	//-450.0f
+	float y = 270.0f - 30.0f;	// 240.0f
 
 	//開始前のカウントダウンのUI制御
-	float startCount = GameAccessHub::getGameManager()->getStartCount();
-	if (startCount > 3.0f)
+	int startCount = GameAccessHub::getGameManager()->getStartCount();
+	switch (startCount)
 	{
+	case 3:
 		sprintf_s(countText, "  %d", 3);
-	}
-	else if (startCount > 2.0f)
-	{
+		break;
+	case 2:
 		sprintf_s(countText, "  %d", 2);
-	}
-	else if (startCount > 1.0f)
-	{
+		break;
+	case 1:
 		sprintf_s(countText, "  %d", 1);
-	}
-	else if (startCount > 0.0f)
-	{
+		break;
+	case 0:
 		sprintf_s(countText, "Start!");
-	}
-	else
-	{
+		break;
+
+	default:
 		sprintf_s(countText, "");
+		break;
 	}
+
+	GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(engine->GetSceneController());
+	GameManager* gm = GameAccessHub::getGameManager();
 
 	//ゲーム中のカウントダウンUI制御
 	float timerCount = gm->getTimerCount();
 	sprintf_s(timerText, "Time %.3f", timerCount);
 
-	//ハートアイテムの取得数カウント
-	sprintf_s(itemText, "Item %d / 5", gm->getHeartItemCount());
+	//クリアまでの取得カウント(ステージごとに変更)
+	int stageClearCount = 0;
+	switch (scene->getCurrentScene())
+	{
+	case static_cast<UINT>(GAME_SCENES::IN_GAME):
+		stageClearCount = (int)Game::CLEAR_COUNT::stage01;
+		break;
+	case static_cast<UINT>(GAME_SCENES::IN_GAME02):
+		stageClearCount = (int)Game::CLEAR_COUNT::stage02;
+		break;
+	case static_cast<UINT>(GAME_SCENES::IN_GAME03):
+		stageClearCount = (int)Game::CLEAR_COUNT::stage03;
+		break;
+	}
+
+	//クリアまでのカウントを表示
+	int heartItemCount = gm->getHeartItemCount();
+	sprintf_s(itemText, "Point %d / %d", heartItemCount, stageClearCount);
+
+	//速度の増加量を表示
+	sprintf_s(playerSpeedText, "Speed +%.0f%%", gm->getPlayerSpeed() * 1000);
 
 	count = MakeSpriteString(count, x, y, 24, 24, itemText);
-	count = MakeSpriteString(count, x, y - 60, 24, 24, timerText);
+	count = MakeSpriteString(count, x, y - 40, 24, 24, timerText);
+	count = MakeSpriteString(count, x, y - 80, 24, 24, playerSpeedText);
 
-	count = MakeSpriteString(count, -100, 0, 48, 48, countText);
+	count = MakeSpriteString(count, x + 350, y - 240, 48, 48, countText);
 
 	//使ったSpriteCharacterだけをパイプラインに登録
 	for (int i = 0; i < count; i++)

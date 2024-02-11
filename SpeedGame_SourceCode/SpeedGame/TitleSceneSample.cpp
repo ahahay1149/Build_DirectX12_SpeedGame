@@ -54,11 +54,6 @@ void TitleSceneSample::SetFontPosition(float pxY)
 	m_messageSp->setSpriteIndex(0);
 }
 
-void TitleSceneSample::SetNextScene(GAME_SCENES nextSc)
-{
-	m_nextScene = nextSc;
-}
-
 void TitleSceneSample::initAction()
 {
 	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
@@ -84,34 +79,6 @@ bool TitleSceneSample::frameAction()
 	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
 	GraphicsPipeLineObjectBase* normalPL = engine->GetPipelineManager()->GetPipeLineObject(L"Sprite");
 	GraphicsPipeLineObjectBase* alphaPL = engine->GetPipelineManager()->GetPipeLineObject(L"AlphaSprite");
-
-	GamePrograming3Scene* scene = static_cast<GamePrograming3Scene*>(engine->GetSceneController());
-	KeyBindComponent* keyBind = static_cast<KeyBindComponent*>(scene->getKeyComponent());
-
-	currentScene = scene->getCurrentScene();
-
-	switch (sta)
-	{
-	case 0:
-
-		if (keyBind->getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BTN_JUMP))
-		{
-			sta = 1;
-		}
-		else if (keyBind->getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BUTTON_R)
-				&& currentScene != static_cast<UINT>(GAME_SCENES::TITLE))
-		{
-			SetNextScene(GAME_SCENES::IN_GAME);
-			sta = 1;
-		}
-		break;
-
-	default:
-		//シーン切り替え呼び出し
-		MyAccessHub::getMyGameEngine()->GetSceneController()->OrderNextScene((UINT)m_nextScene);
-		//ここまで
-		break;
-	}
 
 	normalPL->AddRenerObject(m_bgSp.get());
 	alphaPL->AddRenerObject(m_messageSp.get());

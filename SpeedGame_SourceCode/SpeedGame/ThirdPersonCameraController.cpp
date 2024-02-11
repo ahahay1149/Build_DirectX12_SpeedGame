@@ -100,9 +100,7 @@ void ThirdPersonCameraController::imgui()
 		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
 	
 		ImGui::SliderFloat("Distance", &m_distance, 0.3f, 2.0f);
-		ImGui::SliderFloat("vDeg", &m_vDeg, -1000.0f, 1000.0f);
-		ImGui::SliderFloat("hDeg", &m_hDeg, -1000.0f, 1000.0f);
-	
+
 		ImGui::End();
 	}
 }

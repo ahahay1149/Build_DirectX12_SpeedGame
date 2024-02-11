@@ -28,32 +28,36 @@
 #include "SkyDomeComponent.h"
 #include "TerrainComponent.h"
 #include "CameraComponent.h"
-
+//Player
 #include "UnityChanPlayer.h"
 
+//Camera
 #include "CameraChangerComponent.h"			//カメラ切り替え
 #include "FlyingCameraController.h"			//高高度カメラ
 #include "ThirdPersonCameraController.h"	//三人称カメラ
 
+//UI
 #include "TitleUIRender.h"					//タイトルUI
 #include "GameOverUIRender.h"				//ゲームオーバーUI
+#include "GamePrograming3UIRender.h"		//インゲームUI
+#include "ResultUIRender.h"					//リザルトUI
 
-#include "GameAccessHub.h"					//ゲームシステム用AccessHub
+//ゲームアプリ用AccessHub
+#include "GameAccessHub.h"
+//ゲームアプリ用Enum
+#include "GameAppEnum.h"
 
-//=====Camera Change Phase 1
-#include "GamePrograming3UIRender.h"
-//=====Camera Change Phase 1 End
-
-//HitTest
+//HeartItem
 #include "HeartItemComponent.h"
+#include "HeartItemInfo.h"
 
 //=====動く地形
 #include "MovingPlatform.h"
-//=====動く地形 END
+//=====動く地形 End
 
 //=====Change Scene
 #include "TitleSceneSample.h"
-//=====Change Scene END
+//=====Change Scene End
 
 
 //=========Change Scene
@@ -150,10 +154,15 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 		ClearSceneObjects();
 		//=====Change Scene End
 
+		//前のシーン情報を登録
+		m_preScene = m_scene;
+
 		//Phase 3 Fbx管理を別の処理にまとめたため、Fbx読み込み指示がここに集中
 		switch (m_scene)
 		{
 			case static_cast<UINT>(GAME_SCENES::IN_GAME):
+			case static_cast<UINT>(GAME_SCENES::IN_GAME02):
+			case static_cast<UINT>(GAME_SCENES::IN_GAME03):
 			{
 				FBXDataContainerSystem* fbxSys = FBXDataContainerSystem::GetInstance();
 				fbxSys->DeleteModelFBX(L"SkyDome");
@@ -161,6 +170,8 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				fbxSys->DeleteModelFBX(L"UnityChan");
 				fbxSys->DeleteModelFBX(L"Platform");
 				fbxSys->DeleteModelFBX(L"GoldenHeart");
+				fbxSys->DeleteModelFBX(L"RedHeart");
+				fbxSys->DeleteModelFBX(L"BlueHeart");
 
 				fbxSys->DeleteAnimeFBX(L"WAIT00");
 				fbxSys->DeleteAnimeFBX(L"WALK_F");
@@ -314,23 +325,26 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 				if (!soMng->loadSoundFile(L"./Resources/sounds/InGameBGM.wav", soundId))			//00 InGameBGM
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/GameClearJingle.wav", soundId))		//01 GameClearJingle
+				if (!soMng->loadSoundFile(L"./Resources/sounds/InGameBGM02.wav", soundId))			//01 InGameBGM02
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/GameOverJingle.wav", soundId))		//02 GameOverJingle
+				if (!soMng->loadSoundFile(L"./Resources/sounds/InGameBGM03.wav", soundId))			//02 InGameBGM03
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/getHeartBell0.wav", soundId))		//03
+				if (!soMng->loadSoundFile(L"./Resources/sounds/CountDownWait.wav", soundId))		//03 CountDownWait
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/getHeartBell1.wav", soundId))		//04
+				if (!soMng->loadSoundFile(L"./Resources/sounds/CountDownStart.wav", soundId))		//04 CountDownStart
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/getHeartBell2.wav", soundId))		//05
+				if (!soMng->loadSoundFile(L"./Resources/sounds/ClearStageJingle.wav", soundId))		//05 StageClearJingle
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/getHeartBell3.wav", soundId))		//06
+				if (!soMng->loadSoundFile(L"./Resources/sounds/ClearGameJingle.wav", soundId))		//06 GameClearJingle
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/getHeartBell4.wav", soundId))		//07
+				if (!soMng->loadSoundFile(L"./Resources/sounds/GameOverJingle.wav", soundId))		//07 GameOverJingle
 					return E_FAIL;
-				if (!soMng->loadSoundFile(L"./Resources/sounds/getHeartBell5.wav", soundId))		//08
+				if (!soMng->loadSoundFile(L"./Resources/sounds/HeartGold.wav", soundId))			//08 GoldHeart
 					return E_FAIL;
-
+				if (!soMng->loadSoundFile(L"./Resources/sounds/HeartRed.wav", soundId))				//09 RedHeart
+					return E_FAIL;
+				if (!soMng->loadSoundFile(L"./Resources/sounds/HeartBlue.wav", soundId))			//10 BlueHeart
+					return E_FAIL;
 
 				//システム制御統合オブジェクト登録
 				m_systemObject = make_unique<GameObject>(nullptr);
@@ -371,7 +385,6 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				TitleUIRender* titleRender = new TitleUIRender();
 				cameraObj->addComponent(titleRender);
 
-				titleCamera->SetNextScene(GAME_SCENES::IN_GAME);
 				titleCamera->SetBGColor(0.5f, 0.5f, 0.5f);
 				titleCamera->SetFontPosition(74.0f);
 
@@ -384,191 +397,50 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 		case static_cast<UINT>(GAME_SCENES::IN_GAME):
 			{
-				//Phase 3
-				FBXDataContainerSystem* fbxSys = FBXDataContainerSystem::GetInstance();
+				//各ステージの共通処理
+				hr = InGameSceneBase();
 
+				//使いまわしするのでここで宣言
+				GameObject* heartObj;
+				HeartItemComponent* heartItem;
+
+				//======動く地形
 				FBXCharacterData* terrainFbx = new FBXCharacterData();
+				terrainFbx->SetMainFBX(L"Platform");
+				terrainFbx->setPosition(10.0f, 0.5f, 10.0f);
 
-				if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/TerrainSample.fbx", L"TerrainSample")))
-					return E_FAIL;
-				terrainFbx->SetMainFBX(L"TerrainSample");
-
+				//地形用オブジェクト作成
 				GameObject* terrainObj = new GameObject(terrainFbx);
-
-				//地形用コンポーネント作成。
 				TerrainComponent* trCom = new TerrainComponent();
 				terrainObj->addComponent(trCom);
 
 				//ImGui Set
-				m_imguiManager->setImguiObject("GameScene_Stage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
-
-				AddSceneObject(terrainObj);
-				
-				//m_terrainsにTerrainComponentを登録
-				m_terrains.push_back(trCom);
-
-				//=========動く地形　対応
-				//Platform Test
-				terrainFbx = new FBXCharacterData();
-				terrainFbx->setPosition(10.0f, 0.5f, 10.0f);
-				if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Platform.fbx", L"Platform")))
-					return E_FAIL;
-				terrainFbx->SetMainFBX(L"Platform");
-
-				terrainObj = new GameObject(terrainFbx);
-
-				//地形用コンポーネント作成
-				trCom = new TerrainComponent();
-				terrainObj->addComponent(trCom);
-
-				//ImGui Set
-				m_imguiManager->setImguiObject("GameScene_MovingStage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
+				m_imguiManager->setImguiObject("GameScene_MovingStage", trCom,
+					DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
 
 				terrainObj->addComponent(new MovingPlatform());
 				AddSceneObject(terrainObj);
 
 				//m_terrainsにTerrainComponentを登録
 				m_terrains.push_back(trCom);
-				//=========動く地形　対応 END
-
-				//スカイドーム
-				FBXCharacterData* skydomeFbx = new FBXCharacterData();
-				if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/SkyDome001.fbx", L"SkyDome")))
-					return E_FAIL;
-				skydomeFbx->SetMainFBX(L"SkyDome");
-				
-				GameObject* skydomeObj = new GameObject(skydomeFbx);
-				SkyDomeComponent* skCom = new SkyDomeComponent();
-				skydomeObj->addComponent(skCom);
-
-				AddSceneObject(skydomeObj);
-
-				//Unityちゃん登録
-				GameObject* unityChanObj;
-				FBXCharacterData* unityChanFbx = new FBXCharacterData();	//FBX用CharacterData
-				UnityChanPlayer* unityChanPlayer = new UnityChanPlayer();	//UnityChan本体
-
-				//Phase 3 UnityちゃんFBX読み込み
-				fbxSys->LoadModelFBX(L"./Resources/fbx/unitychan.fbx", L"UnityChan");
-				fbxSys->LoadAnimationFBX(L"./Resources/fbx/UnityChanAnime/unitychan_WAIT00.fbx", L"WAIT00");
-				fbxSys->LoadAnimationFBX(L"./Resources/fbx/UnityChanAnime/unitychan_WALK00_F.fbx", L"WALK_F");
-				fbxSys->LoadAnimationFBX(L"./Resources/fbx/UnityChanAnime/unitychan_UMATOBI00.fbx", L"JUMP");
-
-				unityChanObj = new GameObject(unityChanFbx);	//FBXCharacterDataを持たせて初期化
-				unityChanObj->addComponent(unityChanPlayer);	//UnityChan本体コンポーネントをセット
-				GameAccessHub::setUnityChan(unityChanPlayer);
-				//ImGui Set
-				m_imguiManager->setImguiObject("GameScene_UnityChanPlayer", unityChanPlayer, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Player | DEBUG_FLAG::Shader_Player);
-				AddSceneObject(unityChanObj);
-
-				//カメラ
-				GameObject* cameraObj;
-				cameraObj = new GameObject(new CharacterData());
-				CameraComponent* camComp = new CameraComponent();
-
-				//カメラリスト追加 UIモード時用
-				//====CameraFix
-				m_cameraComponents[L"MainCamera"] = camComp;
-
-				cameraObj->addComponent(camComp);
-				//ImGui Set
-				m_imguiManager->setImguiObject("GameCam_CameraComponent", camComp, DEBUG_FLAG::Scene_InGame);
-				AddSceneObject(cameraObj);
-
-				//本当はCameraComponent本体より先に動いて欲しい
-				FlyingCameraController* flyCam = new FlyingCameraController();
-				cameraObj->addComponent(flyCam);
-				m_imguiManager->setImguiObject("GameCam_FlyingCamera", flyCam, DEBUG_FLAG::Scene_InGame);
-
-				ThirdPersonCameraController* tpCam = new ThirdPersonCameraController();
-				cameraObj->addComponent(tpCam);
-				m_imguiManager->setImguiObject("GameCam_ThirdPersonCamera", tpCam, DEBUG_FLAG::Scene_InGame);
-
-				tpCam->setActive(false);	//初期状態OFFに
-
-				CameraChangerComponent* camChanger = new CameraChangerComponent();
-				cameraObj->addComponent(camChanger);	//CameraChangerをセット
-
-				camChanger->SetCameraController(flyCam);//CameraChangerに高高度カメラセット
-				camChanger->SetCameraController(tpCam);	//CameraChangerに３人称カメラセット
-
-				camChanger->ChangeCameraController(0);	//初期状態を高高度カメラに設定
-				//カメラController系ここまで
-
-				//本当はカメラも複数個用意して、カメラごとに同時レンダリング出来るようにしたい
-				engine->SetCameraData(cameraObj->getCharacterData());
-
-				//カメラ初期設定
-				camComp->changeCameraRatio(engine->GetWidth(), engine->GetHeight());
-				camComp->changeCameraDepth(0.01f, 1000.0f);
-				camComp->changeCameraFOVRadian(DirectX::XMConvertToRadians(45.0f));
-
-				camComp->changeCameraPosition(1.5f, 1.2f, 0.0f);
-
-				//UnityChanPlayerにCameraComponentを登録
-				unityChanPlayer->SetCurrentCamera(camComp);
-
-				//=====Camera Change Phase 1
-				cameraObj = new GameObject(new CharacterData());
-				GamePrograming3UIRender* uiRender = new GamePrograming3UIRender();
-				cameraObj->addComponent(uiRender);
-				GameAccessHub::setInGameUIRender(uiRender);
-
-				AddSceneObject(cameraObj);
-
-				//カメラリスト追加 UIモード時用
-				m_cameraComponents[L"HUDCamera"] = uiRender;
-				//=====Camera Change Phase 1 End
-
-				FBXCharacterData* heartFbx = new FBXCharacterData();
-
-				if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Heart.fbx", L"GoldenHeart")))
-					return E_FAIL;
-
-				//ハートの個数
-				const int heartNum = 10;
-
-				//ハートの情報
-				struct HeartInfo
-				{
-					float x, y, z;
-					float playerSpeed;
-					int points;
-				};
-
-				HeartInfo heartInfo[heartNum]
-				{
-					3.0f, 0.0f, 8.0f,		0.02f,	1,
-					-11.0f, -4.0f, 10.0f,	0.04f,	1,
-					13.0f, -3.0f, 22.0f,	0.02f,	1,
-					0.0f, -6.0f, 20.0f,		0.02f,	1,
-					-7.0f, -4.0f, 18.0f,	0.02f,	1,
-					20.0f, 0.0f, 20.0f,		0.02f,	1,
-					25.0f, 1.0f, 15.0f,		0.03f,	1,
-					7.0f, -8.0f, 30.0f,		0.01f,	1,
-					15.0f, 0.0f, 10.0f,		0.02f,	1,
-					10.0f, 15.0f, 10.0f,	0.1f,	1,
-				};
-
-				//使いまわしするのでここで宣言
-				GameObject* heartObj;
-				HeartItemComponent* heartItem;
+				//======動く地形 End
 
 				//ハート生成
-				for (int i = 0; i < heartNum; i++)
+				for (int i = 0; i < HeartInfo::heartNum; i++)
 				{
-					heartFbx = new FBXCharacterData();
-					heartFbx->SetMainFBX(L"GoldenHeart");
-					heartFbx->setPosition(heartInfo[i].x, heartInfo[i].y, heartInfo[i].z);
+					FBXCharacterData* heartFbx = new FBXCharacterData();
+					heartFbx->SetMainFBX(HeartType::typeMap.at(HeartInfo::heart01[i].type));
+					heartFbx->setPosition(HeartInfo::heart01[i].x, HeartInfo::heart01[i].y, HeartInfo::heart01[i].z);
 
 					heartObj = new GameObject(heartFbx);
 					heartItem = new HeartItemComponent();
-					heartItem->setPlayerSpeed(heartInfo[i].playerSpeed);
-					heartItem->setHeartPoint(heartInfo[i].points);
+					heartItem->setHeartSpeed(HeartInfo::heart01[i].playerSpeed);
+					heartItem->setHeartType(static_cast<int>(HeartInfo::heart01[i].type));
 					heartObj->addComponent(heartItem);
 
 					//ImGui Set
-					m_imguiManager->setImguiObject("HeartItem:" + std::to_string(i + 1), heartItem, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_HeartItem | DEBUG_FLAG::Shader_Stage);
+					m_imguiManager->setImguiObject("Scene01_HeartItem:" + std::to_string(i + 1), heartItem,
+						DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_HeartItem | DEBUG_FLAG::Shader_Stage);
 
 					AddSceneObject(heartObj);
 				}
@@ -578,8 +450,88 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				//======MipMap
 				engine->GetTextureManager()->GenerateMipMap();
 				//======MipMap End
-
 			}
+			break;
+
+		case static_cast<UINT>(GAME_SCENES::IN_GAME02):
+			{
+				//各ステージの共通処理
+				hr = InGameSceneBase();
+
+				//Stage02に合わせたUnityChanPlayerの位置を設定
+				GameObject* gameObj = static_cast<GameComponent*>(GameAccessHub::getUnityChan())->getGameObject();
+				gameObj->getCharacterData()->setPosition(Player::stagePos[1].x, Player::stagePos[1].y, Player::stagePos[1].z);
+
+				//使いまわしするのでここで宣言
+				GameObject* heartObj;
+				HeartItemComponent* heartItem;
+
+				//ハート生成
+				for (int i = 0; i < HeartInfo::heartNum; i++)
+				{
+					FBXCharacterData* heartFbx = new FBXCharacterData();
+					heartFbx->SetMainFBX(HeartType::typeMap.at(HeartInfo::heart02[i].type));
+					heartFbx->setPosition(HeartInfo::heart02[i].x, HeartInfo::heart02[i].y, HeartInfo::heart02[i].z);
+
+					heartObj = new GameObject(heartFbx);
+					heartItem = new HeartItemComponent();
+					heartItem->setHeartSpeed(HeartInfo::heart02[i].playerSpeed);
+					heartItem->setHeartType(static_cast<int>(HeartInfo::heart02[i].type));
+					heartObj->addComponent(heartItem);
+
+					//ImGui Set
+					m_imguiManager->setImguiObject("Scene02_HeartItem:" + std::to_string(i + 1), heartItem,
+						DEBUG_FLAG::Scene_InGame02 | DEBUG_FLAG::Component_HeartItem | DEBUG_FLAG::Shader_Stage);
+
+					AddSceneObject(heartObj);
+				}
+
+				engine->UploadCreatedTextures();
+
+				//======MipMap
+				engine->GetTextureManager()->GenerateMipMap();
+				//======MipMap End
+			}
+			break;
+		case static_cast<UINT>(GAME_SCENES::IN_GAME03):
+			{
+				//各ステージの共通処理
+				hr = InGameSceneBase();
+
+				//Stage03に合わせたUnityChanPlayerの位置を設定
+				GameObject* gameObj = static_cast<GameComponent*>(GameAccessHub::getUnityChan())->getGameObject();
+				gameObj->getCharacterData()->setPosition(Player::stagePos[2].x, Player::stagePos[2].y, Player::stagePos[2].z);
+
+				//使いまわしするのでここで宣言
+				GameObject* heartObj;
+				HeartItemComponent* heartItem;
+
+				//ハート生成
+				for (int i = 0; i < HeartInfo::heartNum; i++)
+				{
+					FBXCharacterData* heartFbx = new FBXCharacterData();
+					heartFbx->SetMainFBX(HeartType::typeMap.at(HeartInfo::heart03[i].type));
+					heartFbx->setPosition(HeartInfo::heart03[i].x, HeartInfo::heart03[i].y, HeartInfo::heart03[i].z);
+
+					heartObj = new GameObject(heartFbx);
+					heartItem = new HeartItemComponent();
+					heartItem->setHeartSpeed(HeartInfo::heart03[i].playerSpeed);
+					heartItem->setHeartType(static_cast<int>(HeartInfo::heart03[i].type));
+					heartObj->addComponent(heartItem);
+
+					//ImGui Set
+					m_imguiManager->setImguiObject("Scene03_HeartItem:" + std::to_string(i + 1), heartItem,
+						DEBUG_FLAG::Scene_InGame03 | DEBUG_FLAG::Component_HeartItem | DEBUG_FLAG::Shader_Stage);
+
+					AddSceneObject(heartObj);
+				}
+
+				engine->UploadCreatedTextures();
+
+				//======MipMap
+				engine->GetTextureManager()->GenerateMipMap();
+				//======MipMap End
+				}
 			break;
 
 		case static_cast<UINT>(GAME_SCENES::GAME_OVER):
@@ -591,7 +543,6 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				GameOverUIRender* uiRender = new GameOverUIRender();
 				CameraObj->addComponent(uiRender);
 
-				overCamera->SetNextScene(GAME_SCENES::TITLE);
 				overCamera->SetBGColor(0.5f, 0.5f, 0.5f);
 				overCamera->SetFontPosition(200.0f);
 
@@ -611,13 +562,11 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				//======Camera Change Phase 1
 				ResultUIRender* uiRender = new ResultUIRender();
 				cameraObj->addComponent(uiRender);
-				GameAccessHub::setResultUIRender(uiRender);
 
 				//カメラリスト追加 UIモード時用
 				m_cameraComponents[L"HUDCamera"] = uiRender;
 				//======Camera Change Phase 1 End
 
-				clearCamera->SetNextScene(GAME_SCENES::TITLE);
 				clearCamera->SetBGColor(0.5f, 0.5f, 0.5f);
 				clearCamera->SetFontPosition(375.0f);
 
@@ -674,4 +623,138 @@ void GamePrograming3Scene::RemoveCamera(std::wstring label)
 void SceneObjectDeleter::ExecuteDeleter(GameObject* go)
 {
 	myScene->DeleteSceneObject(go); //Deleterを経由すればGameObjectの削除からこれが呼べる
+}
+
+HRESULT GamePrograming3Scene::InGameSceneBase()
+{
+	HRESULT hr = S_OK;
+	MyGameEngine* engine = MyAccessHub::getMyGameEngine();
+
+	//Phase 3
+	FBXDataContainerSystem* fbxSys = FBXDataContainerSystem::GetInstance();
+
+	FBXCharacterData* terrainFbx = new FBXCharacterData();
+
+	if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/TerrainSample.fbx", L"TerrainSample")))
+		return E_FAIL;
+	terrainFbx->SetMainFBX(L"TerrainSample");
+
+	GameObject* terrainObj = new GameObject(terrainFbx);
+
+	//地形用コンポーネント作成。
+	TerrainComponent* trCom = new TerrainComponent();
+	terrainObj->addComponent(trCom);
+
+	//ImGui Set
+	m_imguiManager->setImguiObject("GameScene_Stage", trCom,
+		DEBUG_FLAG::Scene_InGameAll | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
+
+	AddSceneObject(terrainObj);
+
+	//m_terrainsにTerrainComponentを登録
+	m_terrains.push_back(trCom);
+
+	//===動く地形 FBX読み込み
+	if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Platform.fbx", L"Platform")))
+		return E_FAIL;
+
+	//スカイドーム
+	FBXCharacterData* skydomeFbx = new FBXCharacterData();
+	if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/SkyDome001.fbx", L"SkyDome")))
+		return E_FAIL;
+
+	skydomeFbx->SetMainFBX(L"SkyDome");
+	GameObject* skydomeObj = new GameObject(skydomeFbx);
+	SkyDomeComponent* skCom = new SkyDomeComponent();
+	skydomeObj->addComponent(skCom);
+
+	AddSceneObject(skydomeObj);
+
+	//Unityちゃん登録
+	GameObject* unityChanObj;
+	FBXCharacterData* unityChanFbx = new FBXCharacterData();	//FBX用CharacterData
+	UnityChanPlayer* unityChanPlayer = new UnityChanPlayer();	//UnityChan本体
+
+	//Phase 3 UnityちゃんFBX読み込み
+	fbxSys->LoadModelFBX(L"./Resources/fbx/unitychan.fbx", L"UnityChan");
+	fbxSys->LoadAnimationFBX(L"./Resources/fbx/UnityChanAnime/unitychan_WAIT00.fbx", L"WAIT00");
+	fbxSys->LoadAnimationFBX(L"./Resources/fbx/UnityChanAnime/unitychan_WALK00_F.fbx", L"WALK_F");
+	fbxSys->LoadAnimationFBX(L"./Resources/fbx/UnityChanAnime/unitychan_UMATOBI00.fbx", L"JUMP");
+
+	unityChanObj = new GameObject(unityChanFbx);	//FBXCharacterDataを持たせて初期化
+	unityChanObj->addComponent(unityChanPlayer);	//UnityChan本体コンポーネントをセット
+	GameAccessHub::setUnityChan(unityChanPlayer);
+	//ImGui Set
+	m_imguiManager->setImguiObject("GameScene_UnityChanPlayer", unityChanPlayer,
+		DEBUG_FLAG::Scene_InGameAll | DEBUG_FLAG::Component_Player | DEBUG_FLAG::Shader_Player);
+	AddSceneObject(unityChanObj);
+
+	//カメラ
+	GameObject* cameraObj;
+	cameraObj = new GameObject(new CharacterData());
+	CameraComponent* camComp = new CameraComponent();
+
+	//カメラリスト追加 UIモード時用
+	//====CameraFix
+	m_cameraComponents[L"MainCamera"] = camComp;
+
+	cameraObj->addComponent(camComp);
+	AddSceneObject(cameraObj);
+
+	//本当はCameraComponent本体より先に動いて欲しい
+	FlyingCameraController* flyCam = new FlyingCameraController();
+	cameraObj->addComponent(flyCam);
+
+	ThirdPersonCameraController* tpCam = new ThirdPersonCameraController();
+	cameraObj->addComponent(tpCam);
+	//ImGui Set
+	m_imguiManager->setImguiObject("GameCam_ThirdPersonCamera", tpCam, DEBUG_FLAG::Scene_InGameAll);
+
+	tpCam->setActive(false);	//初期状態OFFに
+
+	CameraChangerComponent* camChanger = new CameraChangerComponent();
+	cameraObj->addComponent(camChanger);	//CameraChangerをセット
+
+	camChanger->SetCameraController(flyCam);//CameraChangerに高高度カメラセット
+	camChanger->SetCameraController(tpCam);	//CameraChangerに３人称カメラセット
+
+	camChanger->ChangeCameraController(0);	//初期状態を高高度カメラに設定
+	//カメラController系ここまで
+
+	//本当はカメラも複数個用意して、カメラごとに同時レンダリング出来るようにしたい
+	engine->SetCameraData(cameraObj->getCharacterData());
+
+	//カメラ初期設定
+	camComp->changeCameraRatio(engine->GetWidth(), engine->GetHeight());
+	camComp->changeCameraDepth(0.01f, 1000.0f);
+	camComp->changeCameraFOVRadian(DirectX::XMConvertToRadians(45.0f));
+
+	camComp->changeCameraPosition(1.5f, 1.2f, 0.0f);
+
+	//UnityChanPlayerにCameraComponentを登録
+	unityChanPlayer->SetCurrentCamera(camComp);
+
+	//=====Camera Change Phase 1
+	cameraObj = new GameObject(new CharacterData());
+	GamePrograming3UIRender* uiRender = new GamePrograming3UIRender();
+	cameraObj->addComponent(uiRender);
+
+	AddSceneObject(cameraObj);
+
+	//カメラリスト追加 UIモード時用
+	m_cameraComponents[L"HUDCamera"] = uiRender;
+	//=====Camera Change Phase 1 End
+
+	//======HeartItem FBX読み込み処理
+	if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Heart.fbx", L"GoldenHeart")))
+		return E_FAIL;
+
+	if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Heart.fbx", L"BlueHeart")))
+		return E_FAIL;
+
+	if (FAILED(fbxSys->LoadModelFBX(L"./Resources/fbx/Heart.fbx", L"RedHeart")))
+		return E_FAIL;
+	//======HeartItem FBX読み込み処理 End
+
+	return hr;
 }

@@ -5,7 +5,7 @@ class TitleUIRender :
     public UIRenderBase
 {
 private:
-    char uiText[64] = "Press:Space Key";
+    char uiText[16] = "Press:Space Key";
 
 public:
 

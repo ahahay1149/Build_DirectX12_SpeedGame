@@ -1,28 +1,25 @@
 ﻿#pragma once
 #include "GameObject.h"
+
 #include "HeartItemComponent.h"
-#include "ImguiComponent.h"
 #include "UnityChanPlayer.h"
 
-constexpr float Max_Count   = 30.0f;
-constexpr float Start_Count = 4.0f;
+#include "GameAppEnum.h"
+
+#include "ImguiComponent.h"
 
 class GameManager :
     public GameComponent, public ImguiComponent
 {
 private:
     //===Player
-    int m_heartItemCount;   //取得したハートのカウント
+    int m_heartItemCount = 0;   //取得したハートのカウント
+    float m_playerSpeed = 0.0f; //Playerの取得したスピード
     //=========
 
     //===Time
-    float timerCount = Max_Count;       //ゲームの制限時間
-    float startCount = Start_Count;     //カウントダウンの時間
-    //========
-
-    //===Score
-    float bestScore = 0.0f;             //ゲーム全体でのベストタイム
-    float clearScore = 0.0f;            //クリア時の残り時間
+    float timerCount = Timer::Game_Count;       //ゲームの制限時間
+    int startCount = Timer::Start_Count;     //カウントダウンの時間
     //========
 
     //===Sound
@@ -35,34 +32,33 @@ private:
     //========
 
     void changeSceneInit(UINT scene);
-    void countTimer();
 
 public:
+
+    //frameActionよりも前で処理を行う
+    void sendScene(UINT scene);
+
     // GameComponent を介して継承されました
     virtual void initAction() override;
     virtual bool frameAction() override;
     virtual void finishAction() override;
 
-    void sendScene(UINT scene);
-
-    float getStartCount()
+    //===Timer Accessor
+    int getStartCount()
     {
-        return startCount;
+        return startCount / System::intFps;
     }
 
     float getTimerCount()
     {
         return timerCount;
     }
+    //===Timer Accessor End
 
-    float getclearScore()
+    //===Player Accessor
+    void setPlusHeartItemCount(int heartCount)
     {
-        return clearScore;
-    }
-
-    float getBestScore()
-    {
-        return bestScore;
+        m_heartItemCount += heartCount;
     }
 
     int getHeartItemCount()
@@ -70,18 +66,24 @@ public:
         return m_heartItemCount;
     }
 
-    void setPlusHeartItemCount(int heartCount)
+    float getPlayerSpeed()
     {
-        m_heartItemCount += heartCount;
+        return m_playerSpeed;
     }
+
+    void varSetPlayerSpeed(float heartSpeed);
+    void varSetPlayerSpeed(int blueHeart);
+    //===Player Accessor End
 
 private:
     //ImGui
     void imgui() override;
+    void imguiCountRegist();
 
     bool timerStop = false;
+    bool countStop = false;
     float count = 0.0f;
 
     int selectScene = -1;
-    const char* sceneItems[4] = { "Title","In_Game","Game_Over", "Game_Clear" };
+    const char* sceneItems[6] = { "Title", "In_Game", "In_Game02", "In_Game03", "Game_Over", "Game_Clear" };
 };

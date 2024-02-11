@@ -1,20 +1,14 @@
 ﻿#include "UnityChanPlayer.h"
 #include "FBXCharacterData.h"	//FBXCharacterDataを使うので
-
-#include "GamePrograming3Scene.h"
-#include "GameAccessHub.h"
-#include "KeyBindComponent.h"
-#include "GamePrograming3Enum.h"
-
-//Phase3
 #include "FBXDataContainerSystem.h"
 
-#include "GamePrograming3UIRender.h"
+#include "GamePrograming3Scene.h"
+#include "KeyBindComponent.h"
 
-//ImGui
-#include "imgui.h"
-#include "imgui_impl_win32.h"
-#include "imgui_impl_dx12.h"
+#include "GameAccessHub.h"
+
+#include "GamePrograming3Enum.h"
+#include "GameAppEnum.h"
 
 #define MOVE_3D (0)				//(0)にすると2Dモード
 
@@ -230,9 +224,9 @@ bool UnityChanPlayer::frameAction()
 	moveVect.z = XMVectorGetZ(rotMove);
 
 	//出来た移動ベクトルに移動速度(0.05)をかける
-	moveVect.x *= 0.05f + m_plusSpeed;
-	moveVect.y *= 0.05f + m_plusSpeed / 2;
-	moveVect.z *= 0.05f + m_plusSpeed;
+	moveVect.x *= m_speed + m_plusSpeed;
+	moveVect.y *= m_speed + m_plusSpeed / 2;
+	moveVect.z *= m_speed + m_plusSpeed;
 
 	XMFLOAT3 nowPos = chData->getPosition();
 	nowPos.x += moveVect.x;
@@ -378,11 +372,6 @@ void UnityChanPlayer::finishAction()
 
 void UnityChanPlayer::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 {
-	//HeartItemにぶつかったとき音を鳴らす
-	MyAccessHub::getMyGameEngine()->GetSoundManager()->play(4 + m_getHeartItems);	//getHeartItem01.wavから
-
-	//プレイヤークラス側でもハートの取得数をカウント
-	m_getHeartItems++;
 }
 
 void UnityChanPlayer::imgui()
@@ -398,13 +387,35 @@ void UnityChanPlayer::imgui()
 		ImGui::Begin("UnityChanPlayer");
 		ImGui::SetNextWindowSize(ImVec2(400, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
 
-		ImGui::SliderFloat("PlayerPlusSpeed", &m_plusSpeed, 0.0f, 1.0f);
+		//位置情報
+		ImGui::SeparatorText("Position");
+		imguiPos = chdata->getPosition();
+		ImGui::Text("x: %.3f  y: %.3f  z: %.3f", imguiPos.x, imguiPos.y, imguiPos.z);
 
 		if (ImGui::Button("ResetPos"))
 		{
-			chdata->setPosition(0.0f, 0.0f, 0.0f);
+			auto scene = static_cast<GamePrograming3Scene*>(MyAccessHub::getMyGameEngine()->GetSceneController());
+			switch (scene->getCurrentScene())
+			{
+			case static_cast<UINT>(GAME_SCENES::IN_GAME):
+				chdata->setPosition(Player::stagePos[0].x, Player::stagePos[0].y, Player::stagePos[0].z);
+				break;
+			case static_cast<UINT>(GAME_SCENES::IN_GAME02):
+				chdata->setPosition(Player::stagePos[1].x, Player::stagePos[1].y, Player::stagePos[1].z);
+				break;
+			case static_cast<UINT>(GAME_SCENES::IN_GAME03):
+				chdata->setPosition(Player::stagePos[2].x, Player::stagePos[2].y, Player::stagePos[2].z);
+				break;
+			}
 			chdata->setRotation(0.0f, 0.0f, 0.0f);
 		}
+
+		//加速処理
+		ImGui::SeparatorText("Speed");
+		ImGui::Text("PlusSpeed: %f", m_plusSpeed);
+		ImGui::SliderFloat("PlayerSpeed", &m_speed, 0.0f, 1.0f);
+		if (ImGui::Button("ResetSpeed"))
+			m_speed = 0.05f;
 
 		ImGui::End();
 	}

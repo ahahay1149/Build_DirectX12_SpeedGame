@@ -11,8 +11,11 @@ enum DEBUG_FLAG
 	Scene_All		= 0x00000001,
 	Scene_Title		= 0x00000002,
 	Scene_InGame	= 0x00000004,
-	Scene_GameClear = 0x00000008,
-	Scene_GameOver	= 0x00000010,
+	Scene_InGame02  = 0x00000008,
+	Scene_InGame03  = 0x00000010,
+	Scene_InGameAll = 0x00000004 | 0x00000008 | 0x00000010,
+	Scene_GameClear = 0x00000020,
+	Scene_GameOver  = 0x00000040,
 
 	//9-16 Shader
 	Shader_Stage	= 0x00000200,
@@ -31,6 +34,8 @@ namespace ImguiDebug
 	{
 		{GAME_SCENES::TITLE,		DEBUG_FLAG::Scene_Title},
 		{GAME_SCENES::IN_GAME,		DEBUG_FLAG::Scene_InGame},
+		{GAME_SCENES::IN_GAME02,	DEBUG_FLAG::Scene_InGame02},
+		{GAME_SCENES::IN_GAME03,	DEBUG_FLAG::Scene_InGame03},
 		{GAME_SCENES::GAME_OVER,	DEBUG_FLAG::Scene_GameOver},
 		{GAME_SCENES::GAME_CLEAR,	DEBUG_FLAG::Scene_GameClear},
 	};

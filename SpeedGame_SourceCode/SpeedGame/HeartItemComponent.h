@@ -11,10 +11,10 @@ private:
     HitSphere   m_itemHit;
     float       m_centerY;
 
-    //プレイヤーの上昇量データを保存
-    float       m_playerSpeed;
+    //ハートが持つ移動速度の上昇量を保存
+    float       m_heartSpeed;
 
-    //ハートあたりのポイントを保存
+    //ハートタイプに応じたポイントを保存
     int         m_heartPoint;
 
     //回転用の座標データ
@@ -31,24 +31,14 @@ public:
 
     virtual void hitReaction(GameObject* targetGo, HitAreaBase* hit) override;
 
-    void setPlayerSpeed(float playerSpeed)
+    void setHeartSpeed(float heartSpeed)
     {
-        m_playerSpeed = playerSpeed;
+        m_heartSpeed = heartSpeed;
     }
 
-    float getPlayerSpeed()
+    void setHeartType(int heartType)
     {
-        return m_playerSpeed;
-    }
-
-    void setHeartPoint(int heartPoint)
-    {
-        m_heartPoint = heartPoint;
-    }
-
-    int getHeartPoint()
-    {
-        return m_heartPoint;
+        m_heartPoint = heartType;
     }
 
     //ImGui
@@ -56,5 +46,6 @@ public:
     void imguiInit() override;
 
     XMFLOAT3 m_initPos;
+    XMFLOAT3 m_savePos;
 };
 

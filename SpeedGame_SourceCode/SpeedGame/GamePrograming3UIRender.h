@@ -6,9 +6,10 @@ class GamePrograming3UIRender :
 {
 private:
 
-    char timerText[64] = "Time:30";
-    char itemText[64] = "";
-    char countText[64] = "";
+    char timerText[16] = "Time:30";
+    char itemText[16] = "";
+    char countText[16] = "";
+    char playerSpeedText[16] = "";
 
 public:
     // GameComponent を介して継承されました

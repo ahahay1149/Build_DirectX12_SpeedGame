@@ -6,6 +6,8 @@ enum class GAME_SCENES
 	INIT,
 	TITLE,
 	IN_GAME,
+	IN_GAME02,
+	IN_GAME03,
 	GAME_OVER,
 
 	//=========Change Scene
@@ -25,3 +27,9 @@ enum class HIT_ORDER
 	HIT_ITEM,
 };
 
+//===System
+namespace System
+{
+	static constexpr int intFps = 60;
+	static constexpr float floatFps = 0.01666f;
+}

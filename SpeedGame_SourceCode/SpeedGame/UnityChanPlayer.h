@@ -39,11 +39,11 @@ private:
     XMMATRIX m_lastMatrix;  //最後に変換した行列
     //=====動く地形 対応 END
 
-     //ハートアイテムの獲得数
-    int m_getHeartItems = 0;
+    //UnityChanの基本速度
+    float m_speed = 0.05f;
 
     //UnityChanの加速度
-    float m_plusSpeed;
+    float m_plusSpeed = 0.0f;
 
 public:
     // GameComponent を介して継承されました
@@ -59,15 +59,15 @@ public:
         m_currentCamera = cam;
     }
 
-    //ハートにある値分スピードを足す
-    void setSpeedCount(float speed)
+    //ハートにセットされている数値分スピードを足す
+    void getPlayerPlusSpeed(float plusSpeed)
     {
-        m_plusSpeed += speed;
+        m_plusSpeed = plusSpeed;
     }
 
     //ImGui
     void imgui() override;
 
     XMFLOAT3 m_initPos;
-    XMFLOAT3 imguiPos = { 0,0,0 };
+    XMFLOAT3 imguiPos;
 };

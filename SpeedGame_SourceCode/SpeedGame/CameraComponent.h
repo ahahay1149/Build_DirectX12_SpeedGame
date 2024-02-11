@@ -2,12 +2,10 @@
 
 #include <GameObject.h>
 
-#include "ImguiComponent.h"
-
 using namespace DirectX;
 
 class CameraComponent :
-	public GameComponent, public ImguiComponent
+	public GameComponent
 {
 private:
 	XMFLOAT3	m_normal;
@@ -77,13 +75,4 @@ public:
 	{
 		return XMFLOAT2(m_near, m_far);
 	}
-
-private:
-	//ImGui
-	void imgui() override;
-	void imguiInit() override;
-
-	XMFLOAT3	m_initNormal;
-	XMFLOAT3	m_initFocus;
-	float		m_initFov;
 };

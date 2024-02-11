@@ -4,8 +4,6 @@
 #include <D3D12Helper.h>
 #include <stdio.h>
 
-#include "GamePrograming3Scene.h"
-
 int UIRenderBase::MakeSpriteString(int startIndex, float ltX, float ltY, float width, float height, const char* str)
 {
 	int count = startIndex;
