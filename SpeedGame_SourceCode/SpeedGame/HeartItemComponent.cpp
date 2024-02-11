@@ -49,9 +49,6 @@ bool HeartItemComponent::frameAction()
 		chData->setRotation(m_rotation.x, m_rotation.y, m_rotation.z);
 	}
 
-	//ImGui
-	imgui();
-
 	return true;
 }
 
@@ -69,9 +66,6 @@ void HeartItemComponent::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 
 void HeartItemComponent::imgui()
 {
-	if (!ImguiProcessing::imguiSetting())
-		return;
-
 	FBXCharacterData* chdata = static_cast<FBXCharacterData*>(getGameObject()->getCharacterData());
 
 	ImGui::Begin("Window");

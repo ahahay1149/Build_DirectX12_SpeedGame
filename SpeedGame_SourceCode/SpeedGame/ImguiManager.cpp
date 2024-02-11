@@ -4,6 +4,9 @@
 #include "KeyBindComponent.h"
 #include "GamePrograming3Enum.h"
 
+//===Edit MipMap
+#include "FBXDataContainerSystem.h"
+
 void ImguiManager::initAction()
 {
 
@@ -14,7 +17,10 @@ bool ImguiManager::frameAction()
 	auto scene	= static_cast<GamePrograming3Scene*>(MyAccessHub::getMyGameEngine()->GetSceneController());
 	auto key	= static_cast<KeyBindComponent*>(scene->getKeyComponent());
 
-	if (!key->getWindowBool())
+	if (key->getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BUTTON_E))
+		windowBool = !windowBool;
+
+	if (!windowBool)
 		return true;
 
 	m_scene = scene->getCurrentScene();
@@ -38,6 +44,13 @@ bool ImguiManager::frameAction()
 		break;
 	}
 
+	//===ImGuiのUpdateを全て呼び出し
+	for (auto& it : m_imguiComponents)
+	{
+		it.second->imgui();
+	}
+	//========
+
 	return true;
 }
 
@@ -46,18 +59,38 @@ void ImguiManager::finishAction()
 
 }
 
-void ImguiManager::setImguiObject(std::string id, ImguiProcessing* imgui, UINT32 flag)
+void ImguiManager::setImguiObject(std::string id, ImguiComponent* imgui, UINT32 flag)
 {
+	//ManagerにComponentを格納
 	m_imguiComponents.insert_or_assign(id, imgui);
+	//ComponentにIdとDebugFlagを格納
 	imgui->setId(id);
 	imgui->setDebugFlag(flag);
+	//Initを格納した時点で呼び出し
 	imgui->imguiInit();
 
 	GameComponent* gameObj = dynamic_cast<GameComponent*>(imgui);
 	if (gameObj == nullptr)
 		assert(false && "ImguiManager::chData input failed");
 
+	//Component側にGameComponentを格納
 	imgui->setComData(gameObj);
+}
+
+void ImguiManager::clearImguiObject(UINT scene)
+{
+	for (auto it = m_imguiComponents.begin(); it != m_imguiComponents.end();)
+	{
+		//フラグを取得
+		UINT32 debugFlg = it->second->getDebugFlag();
+
+		//次のシーンのフラグorAllSceneフラグを持っていないコンポーネントを削除
+		if (!(debugFlg & ImguiDebug::sceneMap.at(static_cast<GAME_SCENES>(scene)))
+			&& !(debugFlg & DEBUG_FLAG::Scene_All))
+			it = m_imguiComponents.erase(it);
+		else
+			++it;
+	}
 }
 
 void ImguiManager::imguiSetActiveDebug()

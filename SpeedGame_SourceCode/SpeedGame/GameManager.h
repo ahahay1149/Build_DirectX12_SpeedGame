@@ -1,14 +1,14 @@
 ﻿#pragma once
 #include "GameObject.h"
 #include "HeartItemComponent.h"
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 #include "UnityChanPlayer.h"
 
 constexpr float Max_Count   = 30.0f;
 constexpr float Start_Count = 4.0f;
 
 class GameManager :
-    public GameComponent, public ImguiProcessing
+    public GameComponent, public ImguiComponent
 {
 private:
     //===Player

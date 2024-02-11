@@ -97,14 +97,4 @@ public:
 	{
 		return m_currentInputType;
 	}
-
-//ImGui
-private:
-	bool m_debugWindowFlg = false;
-
-public:
-	bool getWindowBool()
-	{
-		return m_debugWindowFlg;
-	}
 };

@@ -34,9 +34,6 @@ bool FlyingCameraController::frameAction()
 	m_camera->changeCameraFocus(m_targetPos.x, m_targetPos.y, m_targetPos.z);
 	//01: ここまで
 
-	//ImGui
-	imgui();
-
 	return true;
 }
 
@@ -46,9 +43,6 @@ void FlyingCameraController::finishAction()
 
 void FlyingCameraController::imgui()
 {
-	if (!ImguiProcessing::imguiSetting())
-		return;
-
 	ImGui::Begin("Window");
 	ImGui::Checkbox("FlyingCameraController", &check);
 	ImGui::End();

@@ -33,9 +33,6 @@ bool GameManager::frameAction()
 		break;
 	}
 
-	//ImGui
-	imgui();
-
 	return true;
 }
 
@@ -118,9 +115,6 @@ void GameManager::sendScene(UINT scene)
 
 void GameManager::imgui()
 {
-	if (!ImguiProcessing::imguiSetting())
-		return;
-
 	ImGui::Begin("Window");
 	ImGui::Checkbox("GameManager", &check);
 	ImGui::End();

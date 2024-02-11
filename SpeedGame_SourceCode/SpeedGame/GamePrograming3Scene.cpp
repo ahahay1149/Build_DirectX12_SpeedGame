@@ -141,6 +141,11 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 	if (m_scene != scene)
 	{
 
+		//=====Debug Object Clear
+		if(m_imguiManager != nullptr)
+			m_imguiManager->clearImguiObject(scene);
+		//=====Debug Object Clear End
+		
 		//=====Change Scene
 		ClearSceneObjects();
 		//=====Change Scene End
@@ -345,7 +350,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				m_gameManagerObject->addComponent(m_gameManager);
 				GameAccessHub::setGameManager(m_gameManager);
 				//ImGui Set
-				m_imguiManager->setImguiObject("GameManager", m_gameManager, DEBUG_FLAG::Scene_All);
+				m_imguiManager->setImguiObject("All_GameManager", m_gameManager, DEBUG_FLAG::Scene_All);
 
 				engine->AddGameObject(m_gameManagerObject.get());
 
@@ -395,7 +400,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				terrainObj->addComponent(trCom);
 
 				//ImGui Set
-				m_imguiManager->setImguiObject("Stage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
+				m_imguiManager->setImguiObject("GameScene_Stage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
 
 				AddSceneObject(terrainObj);
 				
@@ -417,7 +422,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				terrainObj->addComponent(trCom);
 
 				//ImGui Set
-				m_imguiManager->setImguiObject("MovingStage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
+				m_imguiManager->setImguiObject("GameScene_MovingStage", trCom, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Terrain | DEBUG_FLAG::Shader_Stage);
 
 				terrainObj->addComponent(new MovingPlatform());
 				AddSceneObject(terrainObj);
@@ -453,7 +458,7 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 				unityChanObj->addComponent(unityChanPlayer);	//UnityChan本体コンポーネントをセット
 				GameAccessHub::setUnityChan(unityChanPlayer);
 				//ImGui Set
-				m_imguiManager->setImguiObject("UnityChanPlayer", unityChanPlayer, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Player | DEBUG_FLAG::Shader_Player);
+				m_imguiManager->setImguiObject("GameScene_UnityChanPlayer", unityChanPlayer, DEBUG_FLAG::Scene_InGame | DEBUG_FLAG::Component_Player | DEBUG_FLAG::Shader_Player);
 				AddSceneObject(unityChanObj);
 
 				//カメラ
@@ -467,17 +472,17 @@ HRESULT GamePrograming3Scene::changeGameScene(UINT scene)
 
 				cameraObj->addComponent(camComp);
 				//ImGui Set
-				m_imguiManager->setImguiObject("CameraComponent", camComp, DEBUG_FLAG::Scene_InGame);
+				m_imguiManager->setImguiObject("GameCam_CameraComponent", camComp, DEBUG_FLAG::Scene_InGame);
 				AddSceneObject(cameraObj);
 
 				//本当はCameraComponent本体より先に動いて欲しい
 				FlyingCameraController* flyCam = new FlyingCameraController();
 				cameraObj->addComponent(flyCam);
-				m_imguiManager->setImguiObject("FlyingCamera", flyCam, DEBUG_FLAG::Scene_InGame);
+				m_imguiManager->setImguiObject("GameCam_FlyingCamera", flyCam, DEBUG_FLAG::Scene_InGame);
 
 				ThirdPersonCameraController* tpCam = new ThirdPersonCameraController();
 				cameraObj->addComponent(tpCam);
-				m_imguiManager->setImguiObject("ThirdPersonCamera", tpCam, DEBUG_FLAG::Scene_InGame);
+				m_imguiManager->setImguiObject("GameCam_ThirdPersonCamera", tpCam, DEBUG_FLAG::Scene_InGame);
 
 				tpCam->setActive(false);	//初期状態OFFに
 

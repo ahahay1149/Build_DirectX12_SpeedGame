@@ -26,11 +26,6 @@ bool KeyBindComponent::frameAction()
 	m_mousePrePos = m_mousePos;
 	m_mousePos = m_inputMng->getMousePosition();
 
-	if (getCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BUTTON_E))
-	{
-		m_debugWindowFlg = !m_debugWindowFlg;
-	}
-
 	return true;
 } 
 

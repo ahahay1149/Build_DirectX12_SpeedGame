@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include "GameObject.h"
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 
 #include <HitShapes.h>
 
 class HeartItemComponent :
-    public GameComponent, public ImguiProcessing
+    public GameComponent, public ImguiComponent
 {
 private:
     HitSphere   m_itemHit;

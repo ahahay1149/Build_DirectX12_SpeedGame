@@ -81,9 +81,6 @@ bool ThirdPersonCameraController::frameAction()
 	m_camera->changeCameraPosition(pos.m128_f32[0], pos.m128_f32[1], pos.m128_f32[2]);
 	//02: ここまで
 
-	//ImGui
-	imgui();
-
 	return true;
 }
 
@@ -93,9 +90,6 @@ void ThirdPersonCameraController::finishAction()
 
 void ThirdPersonCameraController::imgui()
 {
-	if (!ImguiProcessing::imguiSetting())
-		return;
-
 	ImGui::Begin("Window");
 	ImGui::Checkbox("ThirdPersonCameraController", &check);
 	ImGui::End();

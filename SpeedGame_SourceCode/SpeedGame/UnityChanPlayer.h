@@ -11,10 +11,10 @@
 #include "FBXCharacterData.h"
 
 //ImGui
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 
 class UnityChanPlayer :
-    public GameComponent, public ImguiProcessing
+    public GameComponent, public ImguiComponent
 {
 private:
     float	m_unityChanHeadHeight;  //頭部までのオフセット

@@ -2,10 +2,10 @@
 #include <GameObject.h>
 #include "CameraComponent.h"
 
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 
 class FlyingCameraController :
-	public GameComponent, public ImguiProcessing
+	public GameComponent, public ImguiComponent
 {
 private:
 	CameraComponent* m_camera;

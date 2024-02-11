@@ -2,12 +2,12 @@
 
 #include <GameObject.h>
 
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 
 using namespace DirectX;
 
 class CameraComponent :
-	public GameComponent, public ImguiProcessing
+	public GameComponent, public ImguiComponent
 {
 private:
 	XMFLOAT3	m_normal;

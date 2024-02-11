@@ -368,7 +368,6 @@ public:
 		return m_cbuffIndex;
 	}
 	// ここまで
-
 };
 
 

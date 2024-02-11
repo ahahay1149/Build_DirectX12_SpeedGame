@@ -369,9 +369,6 @@ bool UnityChanPlayer::frameAction()
 	//判定セット
 	MyAccessHub::getMyGameEngine()->GetHitManager()->setHitArea(this, &bodyColl);
 
-	//ImGui
-	imgui();
-
 	return true;
 }
 
@@ -390,9 +387,6 @@ void UnityChanPlayer::hitReaction(GameObject* targetGo, HitAreaBase* hit)
 
 void UnityChanPlayer::imgui()
 {
-	if (!ImguiProcessing::imguiSetting())
-		return;
-
 	ImGui::Begin("Window");
 	ImGui::Checkbox("UnityChanPlayer", &check);
 	ImGui::End();

@@ -6,12 +6,12 @@
 #include <DirectXMath.h>
 #include <vector>
 
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 
 using namespace DirectX;
 
 class TerrainComponent :
-	public GameComponent, public ImguiProcessing
+	public GameComponent, public ImguiComponent
 {
 	//TerrainHit01
 	//==========HitSystem========

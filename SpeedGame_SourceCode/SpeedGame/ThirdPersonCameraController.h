@@ -4,10 +4,10 @@
 #include "KeyBindComponent.h"
 #include "CameraComponent.h"
 
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
 
 class ThirdPersonCameraController :
-	public GameComponent, public ImguiProcessing
+	public GameComponent, public ImguiComponent
 {
 private:
 	KeyBindComponent* m_keyBind;

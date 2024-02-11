@@ -70,9 +70,6 @@ bool CameraComponent::frameAction()
 		//======Depth Shadow End
 	}
 
-	//ImGui
-	imgui();
-
 	return true;
 }
 
@@ -143,9 +140,6 @@ void CameraComponent::imguiInit()
 
 void CameraComponent::imgui()
 {
-	if (!ImguiProcessing::imguiSetting())
-		return;
-
 	ImGui::Begin("Window");
 	ImGui::Checkbox("CameraComponent", &check);
 	ImGui::End();

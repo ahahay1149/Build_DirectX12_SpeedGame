@@ -1,7 +1,10 @@
 ﻿#pragma once
 #include "GameObject.h"
-#include "ImguiProcessing.h"
+#include "ImguiComponent.h"
+
+//定義系
 #include "GamePrograming3Enum.h"
+#include "MapCustomCompare.h"
 
 //ImGui
 #include "imgui.h"
@@ -10,12 +13,12 @@
 
 #include <map>
 
-#include "MapCustomCompare.h"
-
 class ImguiManager : public GameComponent
 {
 private:
-	std::map<std::string, ImguiProcessing*, ComponentCustomCompare> m_imguiComponents;
+	std::map<std::string, ImguiComponent*, ComponentCustomCompare> m_imguiComponents;
+
+	bool windowBool = false;
 
 	const char* items[4] = { "Lambert","Phong","Blinn Phong", "Toon" };
 	int stageShader = -1;
@@ -36,5 +39,6 @@ public:
 	bool frameAction() override;
 	void finishAction() override;
 
-	void setImguiObject(std::string id, ImguiProcessing* imgui, UINT32 flag);
+	void setImguiObject(std::string id, ImguiComponent* imgui, UINT32 flag);
+	void clearImguiObject(UINT scene);
 };

@@ -1,5 +1,10 @@
 ﻿#pragma once
 
+//定義系
+#include "GamePrograming3Enum.h"
+
+#include <map>
+
 enum DEBUG_FLAG
 {
 	//1-8 DebugScene
@@ -19,3 +24,14 @@ enum DEBUG_FLAG
 	Component_Terrain	= 0x00040000,
 	Component_Player	= 0x00080000,
 };
+
+namespace ImguiDebug
+{
+	static const std::map<GAME_SCENES, DEBUG_FLAG> sceneMap =
+	{
+		{GAME_SCENES::TITLE,		DEBUG_FLAG::Scene_Title},
+		{GAME_SCENES::IN_GAME,		DEBUG_FLAG::Scene_InGame},
+		{GAME_SCENES::GAME_OVER,	DEBUG_FLAG::Scene_GameOver},
+		{GAME_SCENES::GAME_CLEAR,	DEBUG_FLAG::Scene_GameClear},
+	};
+}
